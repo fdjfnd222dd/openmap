@@ -8,11 +8,16 @@ import ClearancePanel from './components/ClearancePanel'
 // App — the root component
 //
 // Manages global state:
-//   1. `session`        — whether a user is logged in
-//   2. `reports`        — the list of all incidents
-//   3. `clearanceLevel` — the user's current access level (1–5)
-//   4. `previewCoords`  — coordinates of a pending (not yet submitted) pin
-//   5. `flyTarget`      — report the map should fly to when a card is clicked
+//   1. `session`         — whether a user is logged in
+//   2. `reports`         — the full unfiltered list of all incidents
+//   3. `clearanceLevel`  — the user's current access level (1–5)
+//   4. `previewCoords`   — coordinates of a pending (not yet submitted) pin
+//   5. `flyTarget`       — report the map should fly to when a card is clicked
+//   6. `activeTypes`     — type filters currently active (empty = show all)
+//   7. `activeStatuses`  — status filters currently active (empty = show all)
+//
+// `filteredReports` is computed (not stored) from reports + active filters
+// and is what gets passed to the Sidebar list and MapView pins.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function App() {
@@ -37,6 +42,26 @@ function App() {
   // ── Fly target — set when the user clicks a report card ──────────────────
   // MapView watches this and calls Leaflet's flyTo() to pan/zoom to the report.
   const [flyTarget, setFlyTarget] = useState(null)
+
+  // ── Filter state ──────────────────────────────────────────────────────────
+  // Each is an array of active filter values. Empty array = no filter (show all).
+  const [activeTypes,    setActiveTypes]    = useState([])
+  const [activeStatuses, setActiveStatuses] = useState([])
+
+  // Derived value: the filtered subset of reports shown in the list and on the map.
+  // This is computed on every render — no need to store it in state.
+  const filteredReports = reports.filter((report) => {
+    // Type filter: skip if this type is not in the active set
+    if (activeTypes.length > 0 && !activeTypes.includes(report.type)) return false
+
+    // Status filter: treat null/undefined status as 'unverified'
+    if (activeStatuses.length > 0) {
+      const status = report.status || 'unverified'
+      if (!activeStatuses.includes(status)) return false
+    }
+
+    return true
+  })
 
   // Whenever the clearance level changes, update the CSS data attribute so that
   // the accent color CSS variables switch instantly across the whole UI.
@@ -131,6 +156,26 @@ function App() {
     setFlyTarget(report)
   }
 
+  // Toggle a type in or out of the active type filters
+  function handleToggleType(type) {
+    setActiveTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    )
+  }
+
+  // Toggle a status in or out of the active status filters
+  function handleToggleStatus(status) {
+    setActiveStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    )
+  }
+
+  // Clear all active filters at once
+  function handleClearFilters() {
+    setActiveTypes([])
+    setActiveStatuses([])
+  }
+
   // Called by Level 5 users to mark a report as 'verified' or 'false'.
   // Updates the local state optimistically so the UI responds instantly.
   function handleUpdateReport(reportId, status) {
@@ -153,18 +198,24 @@ function App() {
       {/* LEFT: report list + auth or submit form */}
       <Sidebar
         session={session}
-        reports={reports}
+        reports={filteredReports}
+        totalCount={reports.length}
         reportsLoading={reportsLoading}
         onNewReport={handleNewReport}
         onUpdateReport={handleUpdateReport}
         onSelectReport={handleSelectReport}
         clearanceLevel={clearanceLevel}
         previewCoords={previewCoords}
+        activeTypes={activeTypes}
+        activeStatuses={activeStatuses}
+        onToggleType={handleToggleType}
+        onToggleStatus={handleToggleStatus}
+        onClearFilters={handleClearFilters}
       />
 
-      {/* RIGHT: full-height interactive map */}
+      {/* RIGHT: full-height interactive map — uses filteredReports so pins match the list */}
       <MapView
-        reports={reports}
+        reports={filteredReports}
         clearanceLevel={clearanceLevel}
         previewCoords={previewCoords}
         onMapClick={handleMapClick}

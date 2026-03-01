@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet'
+import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+// Base cluster CSS — needed for spiderfy animation when pins are stacked on the same spot.
+// We skip MarkerCluster.Default.css because we provide our own cluster icon below.
+import 'react-leaflet-cluster/lib/assets/MarkerCluster.css'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MapView — the full-height interactive map (right column, 70% of screen)
@@ -104,6 +108,21 @@ function FlyController({ flyTarget }) {
   return null
 }
 
+// ── Custom cluster icon ───────────────────────────────────────────────────────
+// Called by MarkerClusterGroup to render the grouped badge when pins overlap.
+// Uses a CSS class so it picks up the accent color CSS variable automatically —
+// this means the cluster badge changes color with the clearance level.
+function createClusterIcon(cluster) {
+  const count = cluster.getChildCount()
+  return L.divIcon({
+    // The inner div's styling comes from the .cluster-icon CSS class in index.css
+    html:      `<div class="cluster-icon"><span>${count}</span></div>`,
+    className: '',
+    iconSize:  L.point(40, 40),
+    iconAnchor:L.point(20, 20),
+  })
+}
+
 // ── Heatmap layer (Level 4+) ──────────────────────────────────────────────────
 // Renders a large semi-transparent circle at each report location.
 // Where many reports are clustered, the circles overlap and create a
@@ -184,45 +203,55 @@ function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget
           <HeatmapLayer reports={reports} />
         )}
 
-        {/* ── Submitted report pins ── */}
-        {reports.map((report) => {
-          const lat = parseFloat(report.latitude)
-          const lng = parseFloat(report.longitude)
-          if (isNaN(lat) || isNaN(lng)) return null
+        {/* ── Submitted report pins — wrapped in MarkerClusterGroup ── */}
+        {/*
+          MarkerClusterGroup automatically groups nearby pins into a single
+          numbered badge. Clicking a cluster zooms in to reveal the individual
+          pins. The custom iconCreateFunction gives the clusters our dark theme.
+        */}
+        <MarkerClusterGroup
+          iconCreateFunction={createClusterIcon}
+          showCoverageOnHover={false}
+          maxClusterRadius={60}
+        >
+          {reports.map((report) => {
+            const lat = parseFloat(report.latitude)
+            const lng = parseFloat(report.longitude)
+            if (isNaN(lat) || isNaN(lng)) return null
 
-          return (
-            <Marker
-              key={report.id}
-              position={[lat, lng]}
-              icon={createEmojiIcon(report.type)}
-            >
-              <Popup>
-                <div className="map-popup">
-                  <span className={`popup-badge popup-badge--${report.type || 'other'}`}>
-                    {(report.type || 'other').toUpperCase()}
-                  </span>
-
-                  {/* Show verification status if it exists */}
-                  {report.status && (
-                    <span className={`popup-status popup-status--${report.status}`}>
-                      {report.status === 'verified' ? '✓ VERIFIED' : '✗ FALSE REPORT'}
+            return (
+              <Marker
+                key={report.id}
+                position={[lat, lng]}
+                icon={createEmojiIcon(report.type)}
+              >
+                <Popup>
+                  <div className="map-popup">
+                    <span className={`popup-badge popup-badge--${report.type || 'other'}`}>
+                      {(report.type || 'other').toUpperCase()}
                     </span>
-                  )}
 
-                  <strong className="popup-title">{report.title}</strong>
+                    {report.status && (
+                      <span className={`popup-status popup-status--${report.status}`}>
+                        {report.status === 'verified' ? '✓ VERIFIED' : '✗ FALSE REPORT'}
+                      </span>
+                    )}
 
-                  {report.description && (
-                    <p className="popup-desc">{report.description}</p>
-                  )}
+                    <strong className="popup-title">{report.title}</strong>
 
-                  <span className="popup-coords">
-                    {lat.toFixed(4)}°, {lng.toFixed(4)}°
-                  </span>
-                </div>
-              </Popup>
-            </Marker>
-          )
-        })}
+                    {report.description && (
+                      <p className="popup-desc">{report.description}</p>
+                    )}
+
+                    <span className="popup-coords">
+                      {lat.toFixed(4)}°, {lng.toFixed(4)}°
+                    </span>
+                  </div>
+                </Popup>
+              </Marker>
+            )
+          })}
+        </MarkerClusterGroup>
 
         {/* ── Preview pin — shown at the click location before submission ── */}
         {previewCoords && (

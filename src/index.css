@@ -1446,3 +1446,142 @@ body {
   background: var(--error-bg);
   border: 1px solid rgba(248, 113, 113, 0.3);
 }
+
+/* ── 16. FILTER BAR ──────────────────────────────────────────────────────────
+   Compact toggle bar between the status bar and the report list.
+   Filters update both the list and the map pins simultaneously.
+   Active buttons use var(--accent) so they react to clearance level changes.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.filter-bar {
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-sidebar);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-row-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  width: 38px;
+  flex-shrink: 0;
+}
+
+.filter-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* Base filter button */
+.filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 7px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-secondary);
+  border-color: var(--border-focus);
+}
+
+/* Active state — uses the clearance-level accent color */
+.filter-btn--active {
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  background: var(--accent-dim) !important;
+}
+
+/* Inactive type-specific tints (subtle, not as strong as active) */
+.filter-btn--flood      { color: rgba(59, 130, 246, 0.6);  border-color: rgba(59, 130, 246, 0.2);  }
+.filter-btn--fire       { color: rgba(239, 68, 68, 0.6);   border-color: rgba(239, 68, 68, 0.2);   }
+.filter-btn--earthquake { color: rgba(249, 115, 22, 0.6);  border-color: rgba(249, 115, 22, 0.2);  }
+.filter-btn--other      { color: rgba(148, 163, 184, 0.6); border-color: rgba(148, 163, 184, 0.2); }
+
+.filter-btn-emoji {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.filter-btn-label {
+  line-height: 1;
+}
+
+/* Clear all link */
+.filter-clear-btn {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.filter-clear-btn:hover {
+  color: var(--error);
+}
+
+/* Status count dimmer fraction (the "/ total" part) */
+.status-count-total {
+  opacity: 0.5;
+  font-size: 11px;
+}
+
+/* ── 17. MARKER CLUSTER ICON ─────────────────────────────────────────────────
+   Custom cluster badge rendered by createClusterIcon() in MapView.jsx.
+   Uses CSS variables so it automatically reflects the clearance level color.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.cluster-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(10, 11, 15, 0.92);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 4px var(--accent-dim), 0 4px 12px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.cluster-icon span {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.cluster-icon:hover {
+  transform: scale(1.1);
+}

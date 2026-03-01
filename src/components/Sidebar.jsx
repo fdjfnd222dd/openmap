@@ -1,6 +1,7 @@
 import ReportList from './ReportList'
 import ReportForm from './ReportForm'
 import AuthPanel from './AuthPanel'
+import FilterBar from './FilterBar'
 import { supabase } from '../supabaseClient'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -14,13 +15,19 @@ import { supabase } from '../supabaseClient'
 
 function Sidebar({
   session,
-  reports,
+  reports,        // already filtered — used for the list
+  totalCount,     // unfiltered count — used in the status bar
   reportsLoading,
   onNewReport,
   onUpdateReport,
   onSelectReport,
   clearanceLevel,
   previewCoords,
+  activeTypes,
+  activeStatuses,
+  onToggleType,
+  onToggleStatus,
+  onClearFilters,
 }) {
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -87,10 +94,26 @@ function Sidebar({
           <span className="status-label">LIVE FEED</span>
         </div>
         <div className="status-right">
-          <span className="status-count">{reports.length}</span>
+          {/* Show "filtered / total" when filters are active, otherwise just total */}
+          {reports.length < totalCount ? (
+            <span className="status-count">{reports.length}
+              <span className="status-count-total"> / {totalCount}</span>
+            </span>
+          ) : (
+            <span className="status-count">{totalCount}</span>
+          )}
           <span className="status-count-label">REPORTS</span>
         </div>
       </div>
+
+      {/* ── Filter bar — sits between status bar and list, does not scroll ── */}
+      <FilterBar
+        activeTypes={activeTypes}
+        activeStatuses={activeStatuses}
+        onToggleType={onToggleType}
+        onToggleStatus={onToggleStatus}
+        onClearAll={onClearFilters}
+      />
 
       {/* ── Scrollable report list ───────────────────────────────────────── */}
       <div className="sidebar-list-area">
