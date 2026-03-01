@@ -485,6 +485,15 @@ body {
   border-color: var(--border);
 }
 
+/* Clickable card — pointer cursor and a slightly more pronounced hover */
+.report-card--clickable {
+  cursor: pointer;
+}
+
+.report-card--clickable:hover {
+  border-color: var(--border-focus);
+}
+
 /* Left-border color per incident type */
 .report-card--flood      { border-left-color: var(--flood);      }
 .report-card--fire       { border-left-color: var(--fire);       }

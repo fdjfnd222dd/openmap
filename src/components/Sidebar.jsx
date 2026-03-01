@@ -18,6 +18,7 @@ function Sidebar({
   reportsLoading,
   onNewReport,
   onUpdateReport,
+  onSelectReport,
   clearanceLevel,
   previewCoords,
 }) {
@@ -98,6 +99,7 @@ function Sidebar({
           loading={reportsLoading}
           clearanceLevel={clearanceLevel}
           onUpdateReport={onUpdateReport}
+          onSelectReport={onSelectReport}
         />
       </div>
 

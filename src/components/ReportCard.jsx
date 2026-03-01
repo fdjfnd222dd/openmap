@@ -44,7 +44,7 @@ function shortId(uuid) {
   return uuid ? uuid.split('-')[0].toUpperCase() : '—'
 }
 
-function ReportCard({ report, clearanceLevel, onUpdateReport }) {
+function ReportCard({ report, clearanceLevel, onUpdateReport, onSelectReport }) {
   const meta = INCIDENT_META[report.type] || INCIDENT_META.other
 
   const [verifying, setVerifying] = useState(false)
@@ -69,7 +69,13 @@ function ReportCard({ report, clearanceLevel, onUpdateReport }) {
   }
 
   return (
-    <article className={`report-card report-card--${meta.mod}`}>
+    // Clicking the card calls onSelectReport, which triggers the map to fly
+    // to this report's pin via FlyController in MapView.
+    <article
+      className={`report-card report-card--${meta.mod} report-card--clickable`}
+      onClick={() => onSelectReport(report)}
+      title="Click to jump to this pin on the map"
+    >
 
       {/* ── Top row: type badge + timestamp ── */}
       <div className="card-meta">
@@ -120,8 +126,10 @@ function ReportCard({ report, clearanceLevel, onUpdateReport }) {
       )}
 
       {/* ── Level 5: verify / false action buttons ── */}
+      {/* stopPropagation prevents the card's onClick (flyTo) from firing
+          when the user clicks one of these buttons */}
       {clearanceLevel >= 5 && (
-        <div className="card-verdict-actions">
+        <div className="card-verdict-actions" onClick={(e) => e.stopPropagation()}>
           <button
             className="btn-verdict btn-verdict--verified"
             onClick={() => handleVerdict('verified')}

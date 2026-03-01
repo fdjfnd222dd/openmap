@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from 'react-leaflet'
+import { useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -83,6 +83,27 @@ const previewIcon = L.divIcon({
   popupAnchor: [0, -18],
 })
 
+// ── Fly controller (jump-to-pin) ──────────────────────────────────────────────
+// This component lives inside MapContainer so it can access the Leaflet map
+// instance via useMap(). When `flyTarget` changes, it calls map.flyTo() to
+// smoothly pan and zoom to that report's location.
+function FlyController({ flyTarget }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!flyTarget) return
+    const lat = parseFloat(flyTarget.latitude)
+    const lng = parseFloat(flyTarget.longitude)
+    if (isNaN(lat) || isNaN(lng)) return
+
+    // flyTo smoothly animates the map to the target coordinates.
+    // zoom 13 is a good street-level view; duration is in seconds.
+    map.flyTo([lat, lng], 13, { duration: 1.2 })
+  }, [flyTarget, map])
+
+  return null
+}
+
 // ── Heatmap layer (Level 4+) ──────────────────────────────────────────────────
 // Renders a large semi-transparent circle at each report location.
 // Where many reports are clustered, the circles overlap and create a
@@ -113,7 +134,7 @@ function HeatmapLayer({ reports }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MapView({ reports, clearanceLevel, previewCoords, onMapClick }) {
+function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget }) {
   // Local state for the heatmap toggle (only relevant at level 4+)
   const [showHeatmap, setShowHeatmap] = useState(false)
 
@@ -154,6 +175,9 @@ function MapView({ reports, clearanceLevel, previewCoords, onMapClick }) {
 
         {/* Listens for map clicks and calls onMapClick(lat, lng) */}
         <MapClickHandler onMapClick={onMapClick} />
+
+        {/* Watches flyTarget and calls map.flyTo() when a card is clicked */}
+        <FlyController flyTarget={flyTarget} />
 
         {/* Heatmap circles — only rendered when toggled on at level 4+ */}
         {clearanceLevel >= 4 && showHeatmap && (

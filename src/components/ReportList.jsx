@@ -7,7 +7,7 @@ import ReportCard from './ReportCard'
 // so cards can show level-gated content.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ReportList({ reports, loading, clearanceLevel, onUpdateReport }) {
+function ReportList({ reports, loading, clearanceLevel, onUpdateReport, onSelectReport }) {
 
   if (loading) {
     return (
@@ -42,6 +42,7 @@ function ReportList({ reports, loading, clearanceLevel, onUpdateReport }) {
           report={report}
           clearanceLevel={clearanceLevel}
           onUpdateReport={onUpdateReport}
+          onSelectReport={onSelectReport}
         />
       ))}
     </div>
