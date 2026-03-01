@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient'
 import Sidebar from './components/Sidebar'
 import MapView from './components/MapView'
 import ClearancePanel from './components/ClearancePanel'
+import GraphView from './components/GraphView'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App — the root component
@@ -25,6 +26,7 @@ function App() {
   const [authLoading, setAuthLoading]       = useState(true)
   const [reports, setReports]               = useState([])
   const [reportsLoading, setReportsLoading] = useState(true)
+  const [activeView, setActiveView]         = useState('reporting') // 'reporting' | 'relations'
 
   // ── Clearance level ───────────────────────────────────────────────────────
   const [clearanceLevel, setClearanceLevel] = useState(() => {
@@ -229,40 +231,79 @@ function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar
-        session={session}
-        reports={filteredReports}
-        totalCount={reports.length}
-        reportsLoading={reportsLoading}
-        onNewReport={handleNewReport}
-        onUpdateReport={handleUpdateReport}
-        onSelectReport={handleSelectReport}
-        onProfileRefresh={refreshProfile}
-        clearanceLevel={clearanceLevel}
-        previewCoords={previewCoords}
-        profiles={profiles}
-        activeTypes={activeTypes}
-        activeStatuses={activeStatuses}
-        onToggleType={handleToggleType}
-        onToggleStatus={handleToggleStatus}
-        onClearFilters={handleClearFilters}
-        selectedReport={selectedReport}
-        onCloseDetail={handleCloseDetail}
-      />
 
-      <MapView
-        reports={filteredReports}
-        clearanceLevel={clearanceLevel}
-        previewCoords={previewCoords}
-        onMapClick={handleMapClick}
-        flyTarget={flyTarget}
-        onSelectReport={handleSelectReport}
-      />
+      {/* ── Top navigation bar ── */}
+      <nav className="app-topnav">
+        <div className="topnav-brand">
+          <span className="topnav-brand-mark">⬡</span>
+          <span className="topnav-brand-name">PROJECT HILO</span>
+        </div>
 
-      <ClearancePanel
-        clearanceLevel={clearanceLevel}
-        onLevelChange={setClearanceLevel}
-      />
+        <div className="topnav-tabs">
+          <button
+            className={`topnav-tab ${activeView === 'reporting' ? 'topnav-tab--active' : ''}`}
+            onClick={() => setActiveView('reporting')}
+          >
+            🗺 REPORTING
+          </button>
+          <button
+            className={`topnav-tab ${activeView === 'relations' ? 'topnav-tab--active' : ''}`}
+            onClick={() => setActiveView('relations')}
+          >
+            🕸 RELATIONS
+          </button>
+        </div>
+
+        <div className="topnav-actions">
+          <ClearancePanel
+            clearanceLevel={clearanceLevel}
+            onLevelChange={setClearanceLevel}
+          />
+        </div>
+      </nav>
+
+      {/* ── Main content — graph or map+sidebar ── */}
+      <div className="app-content">
+        {activeView === 'relations' ? (
+          <GraphView
+            session={session}
+            clearanceLevel={clearanceLevel}
+          />
+        ) : (
+          <>
+            <Sidebar
+              session={session}
+              reports={filteredReports}
+              totalCount={reports.length}
+              reportsLoading={reportsLoading}
+              onNewReport={handleNewReport}
+              onUpdateReport={handleUpdateReport}
+              onSelectReport={handleSelectReport}
+              onProfileRefresh={refreshProfile}
+              clearanceLevel={clearanceLevel}
+              previewCoords={previewCoords}
+              profiles={profiles}
+              activeTypes={activeTypes}
+              activeStatuses={activeStatuses}
+              onToggleType={handleToggleType}
+              onToggleStatus={handleToggleStatus}
+              onClearFilters={handleClearFilters}
+              selectedReport={selectedReport}
+              onCloseDetail={handleCloseDetail}
+            />
+
+            <MapView
+              reports={filteredReports}
+              clearanceLevel={clearanceLevel}
+              previewCoords={previewCoords}
+              onMapClick={handleMapClick}
+              flyTarget={flyTarget}
+              onSelectReport={handleSelectReport}
+            />
+          </>
+        )}
+      </div>
+
     </div>
   )
 }
