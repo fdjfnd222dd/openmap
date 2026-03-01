@@ -14,6 +14,39 @@
 
 /* ── 1. CSS VARIABLES (Design tokens) ──────────────────────────────────────── */
 /* Changing a variable here updates it everywhere it's used in the app. */
+
+/*
+  Clearance level accent colors.
+  These override --accent, --accent-dim, and --accent-glow based on the
+  data-clearance attribute set on <html> in App.jsx.
+  Higher specificity than :root alone, so they always win.
+*/
+:root[data-clearance="1"] {
+  --accent:      #94a3b8;
+  --accent-dim:  rgba(148, 163, 184, 0.15);
+  --accent-glow: rgba(148, 163, 184, 0.20);
+}
+:root[data-clearance="2"] {
+  --accent:      #22c55e;
+  --accent-dim:  rgba(34, 197, 94, 0.15);
+  --accent-glow: rgba(34, 197, 94, 0.20);
+}
+:root[data-clearance="3"] {
+  --accent:      #eab308;
+  --accent-dim:  rgba(234, 179, 8, 0.15);
+  --accent-glow: rgba(234, 179, 8, 0.20);
+}
+:root[data-clearance="4"] {
+  --accent:      #f97316;
+  --accent-dim:  rgba(249, 115, 22, 0.15);
+  --accent-glow: rgba(249, 115, 22, 0.20);
+}
+:root[data-clearance="5"] {
+  --accent:      #ef4444;
+  --accent-dim:  rgba(239, 68, 68, 0.15);
+  --accent-glow: rgba(239, 68, 68, 0.20);
+}
+
 :root {
   /* Background layers */
   --bg-app:        #080a0f;
@@ -35,10 +68,10 @@
   --text-muted:     #4a5068;
   --text-label:     #9ba3be;
 
-  /* Accent — amber, the color of warnings and alerts */
-  --accent:         #f59e0b;
-  --accent-dim:     rgba(245, 158, 11, 0.15);
-  --accent-glow:    rgba(245, 158, 11, 0.25);
+  /* Accent default (level 1 = gray; overridden above by data-clearance) */
+  --accent:         #94a3b8;
+  --accent-dim:     rgba(148, 163, 184, 0.15);
+  --accent-glow:    rgba(148, 163, 184, 0.20);
 
   /* Incident type colors */
   --flood:          #3b82f6;
@@ -928,4 +961,479 @@ body {
 .leaflet-control-zoom a:hover {
   background: var(--bg-card-hover) !important;
   color: var(--text-primary) !important;
+}
+
+/* ── 11. PREVIEW PIN (click-to-place) ────────────────────────────────────────
+   The pulsing pin that appears on the map when the user clicks a location
+   before submitting the form. Defined here as a global class because it's
+   referenced from a Leaflet divIcon HTML string in MapView.jsx.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.preview-pin-inner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid white;
+  box-shadow:
+    0 0 0 0 var(--accent-glow),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+  animation: preview-ping 1.6s ease-out infinite;
+}
+
+@keyframes preview-ping {
+  0%   { box-shadow: 0 0 0 0 var(--accent-glow),   0 3px 10px rgba(0,0,0,0.5); }
+  60%  { box-shadow: 0 0 0 14px transparent,        0 3px 10px rgba(0,0,0,0.5); }
+  100% { box-shadow: 0 0 0 0 transparent,           0 3px 10px rgba(0,0,0,0.5); }
+}
+
+/* Hint banner shown while a preview pin is active */
+.map-pin-hint {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: rgba(8, 10, 15, 0.88);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  white-space: nowrap;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+/* Small "⊕" indicator on the lat label when coords are auto-filled */
+.field-pin-hint {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+/* Tip shown in the form when no preview pin is active yet */
+.form-map-tip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  padding: 6px 8px;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+}
+
+/* ── 12. HEATMAP TOGGLE (Level 4+) ───────────────────────────────────────────
+   Floating button on the map surface to toggle the density heatmap layer.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.heatmap-toggle {
+  position: absolute;
+  /* Sits below the Leaflet zoom controls in the top-left corner */
+  top: 84px;
+  left: 10px;
+  z-index: 500;
+
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 10px;
+
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.heatmap-toggle:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+}
+
+/* Active state — when the heatmap is turned ON */
+.heatmap-toggle--on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.heatmap-toggle-icon {
+  font-size: 12px;
+}
+
+/* ── 13. CLEARANCE PANEL ──────────────────────────────────────────────────────
+   Fixed overlay in the top-right corner of the screen (above the map).
+   Uses `--level-color` (set via inline style in ClearancePanel.jsx) to tint
+   the badge with the current level's color.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.clearance-panel {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  /* Default level color — overridden by inline style */
+  --level-color: #94a3b8;
+}
+
+/* The always-visible badge pill */
+.clearance-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px 5px 8px;
+  background: rgba(8, 10, 15, 0.88);
+  border: 1px solid var(--level-color);
+  border-radius: 4px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: background 0.15s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+.clearance-badge:hover {
+  background: rgba(20, 23, 32, 0.95);
+}
+
+/* Pulsing dot beside the badge — matches the level color */
+.clearance-pip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--level-color);
+  box-shadow: 0 0 8px var(--level-color);
+  animation: pulse-dot 2.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.clearance-lvl {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--level-color);
+  letter-spacing: 0.1em;
+}
+
+.clearance-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--level-color);
+}
+
+.clearance-chevron {
+  font-size: 8px;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* Expanded body panel that appears below the badge */
+.clearance-body {
+  background: rgba(10, 13, 20, 0.96);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  padding: 12px;
+  width: 220px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+/* The ladder of levels */
+.clearance-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.clearance-rung {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 6px;
+  border-radius: 3px;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+
+.clearance-rung.rung--unlocked { opacity: 0.65; }
+.clearance-rung.rung--active   { opacity: 1; background: rgba(255,255,255,0.04); }
+
+.rung-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.rung-num {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  width: 10px;
+}
+
+.rung-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.rung-check {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--level-color);
+}
+
+/* Password input row */
+.clearance-input-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.clearance-input {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.clearance-input:focus {
+  border-color: var(--level-color);
+}
+
+.clearance-input::placeholder {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.clearance-submit-btn {
+  width: 32px;
+  height: 32px;
+  background: var(--level-color);
+  color: #080a0f;
+  border: none;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.clearance-submit-btn:hover { opacity: 0.85; }
+
+.clearance-error {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--error);
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.clearance-revoke-btn {
+  width: 100%;
+  padding: 5px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.clearance-revoke-btn:hover {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+/* ── 14. CLEARANCE GATE (sidebar bottom when logged in at Level 1) ───────────
+   Shown in the bottom panel when a user is logged in but below Level 2.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.clearance-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  gap: 6px;
+  text-align: center;
+}
+
+.gate-icon {
+  font-size: 20px;
+  color: var(--accent);
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+.gate-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+}
+
+.gate-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 220px;
+}
+
+/* ── 15. REPORT CARD — level-gated extensions ────────────────────────────────
+   Extra rows and action buttons shown at higher clearance levels.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Verdict badge on the card (set by level 5 users) */
+.card-verdict {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+}
+
+.card-verdict--verified {
+  color: var(--success);
+  background: var(--success-bg);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.card-verdict--false {
+  color: var(--error);
+  background: var(--error-bg);
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+/* Level 3+ extended details block */
+.card-details {
+  margin-top: 7px;
+  padding: 7px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.card-detail-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.card-detail-value {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Level 5 verdict action buttons */
+.card-verdict-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.btn-verdict {
+  padding: 5px 6px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.btn-verdict:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+.btn-verdict:disabled              { opacity: 0.35; cursor: not-allowed; }
+
+.btn-verdict--verified {
+  background: var(--success-bg);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: var(--success);
+}
+
+.btn-verdict--false {
+  background: var(--error-bg);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: var(--error);
+}
+
+/* Popup status indicator (verified/false shown inside map popups) */
+.popup-status {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 2px;
+  align-self: flex-start;
+}
+
+.popup-status--verified {
+  color: var(--success);
+  background: var(--success-bg);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.popup-status--false {
+  color: var(--error);
+  background: var(--error-bg);
+  border: 1px solid rgba(248, 113, 113, 0.3);
 }

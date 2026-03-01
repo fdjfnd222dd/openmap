@@ -6,17 +6,53 @@ import { supabase } from '../supabaseClient'
 // ─────────────────────────────────────────────────────────────────────────────
 // Sidebar — the left column (30% of the screen)
 //
-// Contains:
-//   - The app header (title, status, user info)
-//   - A scrollable list of submitted reports
-//   - Either the AuthPanel (if logged out) or the ReportForm (if logged in)
+// The bottom panel now depends on both login status AND clearance level:
+//   - Not logged in → show AuthPanel
+//   - Logged in + level 1 → show upgrade nudge (can't submit without level 2)
+//   - Logged in + level 2+ → show ReportForm
 // ─────────────────────────────────────────────────────────────────────────────
 
-function Sidebar({ session, reports, reportsLoading, onNewReport }) {
-
-  // Sign the current user out when they click "Sign Out"
+function Sidebar({
+  session,
+  reports,
+  reportsLoading,
+  onNewReport,
+  onUpdateReport,
+  clearanceLevel,
+  previewCoords,
+}) {
   async function handleLogout() {
     await supabase.auth.signOut()
+  }
+
+  // Decide what to render in the bottom panel
+  function renderBottomPanel() {
+    if (!session) {
+      // Not logged in — show login/signup form
+      return <AuthPanel />
+    }
+
+    if (clearanceLevel < 2) {
+      // Logged in but public clearance — can't submit yet
+      return (
+        <div className="clearance-gate">
+          <div className="gate-icon">⬡</div>
+          <p className="gate-title">VOLUNTEER CLEARANCE REQUIRED</p>
+          <p className="gate-sub">
+            Enter your clearance code in the panel (top-right) to submit reports.
+          </p>
+        </div>
+      )
+    }
+
+    // Logged in + level 2+ — show the full report form
+    return (
+      <ReportForm
+        session={session}
+        onNewReport={onNewReport}
+        previewCoords={previewCoords}
+      />
+    )
   }
 
   return (
@@ -30,7 +66,6 @@ function Sidebar({ session, reports, reportsLoading, onNewReport }) {
           <div className="brand-tagline">Incident Reporting Platform</div>
         </div>
 
-        {/* Show user email + logout button when a session is active */}
         {session && (
           <div className="header-user">
             <div className="user-indicator">
@@ -56,20 +91,19 @@ function Sidebar({ session, reports, reportsLoading, onNewReport }) {
         </div>
       </div>
 
-      {/* ── Report list — scrollable, fills available space ─────────────── */}
-      {/* This div uses flex-grow so the list takes up all space between
-          the header and the bottom panel */}
+      {/* ── Scrollable report list ───────────────────────────────────────── */}
       <div className="sidebar-list-area">
-        <ReportList reports={reports} loading={reportsLoading} />
+        <ReportList
+          reports={reports}
+          loading={reportsLoading}
+          clearanceLevel={clearanceLevel}
+          onUpdateReport={onUpdateReport}
+        />
       </div>
 
-      {/* ── Bottom panel: auth form (logged out) or submit form (logged in) */}
+      {/* ── Bottom panel ────────────────────────────────────────────────── */}
       <div className="sidebar-bottom">
-        {session ? (
-          <ReportForm session={session} onNewReport={onNewReport} />
-        ) : (
-          <AuthPanel />
-        )}
+        {renderBottomPanel()}
       </div>
 
     </aside>

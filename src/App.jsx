@@ -2,52 +2,64 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Sidebar from './components/Sidebar'
 import MapView from './components/MapView'
+import ClearancePanel from './components/ClearancePanel'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // App — the root component
 //
-// This component is responsible for:
-//   1. Tracking whether the user is logged in (the "session")
-//   2. Loading all incident reports from Supabase on startup
-//   3. Passing data down to the Sidebar (left panel) and MapView (right panel)
+// Manages three pieces of global state:
+//   1. `session`        — whether a user is logged in
+//   2. `reports`        — the list of all incidents
+//   3. `clearanceLevel` — the user's current access level (1–5)
+//   4. `previewCoords`  — coordinates of a pending (not yet submitted) pin
 // ─────────────────────────────────────────────────────────────────────────────
 
 function App() {
-  // `session` holds the logged-in user's session object, or null if logged out.
   const [session, setSession] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
-
-  // `reports` is the list of incident objects shown in the sidebar list and on the map.
   const [reports, setReports] = useState([])
   const [reportsLoading, setReportsLoading] = useState(true)
 
-  // ── Step 1: Check if the user is already logged in when the app opens ──────
+  // ── Clearance level (1–5, default is PUBLIC = 1) ──────────────────────────
+  // We use a lazy initializer (the function passed to useState) to set the
+  // data-clearance attribute on the root element SYNCHRONOUSLY on the very
+  // first render — this prevents any brief flash of the wrong accent color.
+  const [clearanceLevel, setClearanceLevel] = useState(() => {
+    document.documentElement.setAttribute('data-clearance', 1)
+    return 1
+  })
+
+  // ── Preview pin — set when the user clicks the map ───────────────────────
+  // { lat: number, lng: number } or null when there is no pending pin.
+  const [previewCoords, setPreviewCoords] = useState(null)
+
+  // Whenever the clearance level changes, update the CSS data attribute so that
+  // the accent color CSS variables switch instantly across the whole UI.
   useEffect(() => {
-    // getSession() reads any saved session from localStorage (so users stay
-    // logged in after refreshing the page).
+    document.documentElement.setAttribute('data-clearance', clearanceLevel)
+  }, [clearanceLevel])
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setAuthLoading(false)
     })
 
-    // onAuthStateChange fires whenever the user logs in or out.
-    // This keeps our `session` state in sync automatically.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
 
-    // Cleanup: unsubscribe when the App component unmounts (good practice).
     return () => subscription.unsubscribe()
-  }, []) // The empty array means this runs once when the app first loads.
+  }, [])
 
-  // ── Step 2: Load all reports from the database when the app opens ──────────
+  // ── Load reports ──────────────────────────────────────────────────────────
   useEffect(() => {
     fetchReports()
   }, [])
 
-  // Fetches all rows from the "reports" table, ordered newest-first.
   async function fetchReports() {
     setReportsLoading(true)
 
@@ -65,14 +77,28 @@ function App() {
     setReportsLoading(false)
   }
 
-  // ── Step 3: Handle a newly submitted report ────────────────────────────────
-  // When a user submits the form, we add the new report to the front of the
-  // list immediately (optimistic update), so it appears without a page refresh.
-  function handleNewReport(newReport) {
-    setReports((prev) => [newReport, ...prev])
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  // Called when the user clicks on the map — places a preview pin
+  function handleMapClick(lat, lng) {
+    setPreviewCoords({ lat, lng })
   }
 
-  // Show a loading screen while we check for a saved session
+  // Called when the form is submitted — adds the report to the list,
+  // removes the preview pin, and clears it from the map.
+  function handleNewReport(newReport) {
+    setReports((prev) => [newReport, ...prev])
+    setPreviewCoords(null)
+  }
+
+  // Called by Level 5 users to mark a report as 'verified' or 'false'.
+  // Updates the local state optimistically so the UI responds instantly.
+  function handleUpdateReport(reportId, status) {
+    setReports((prev) =>
+      prev.map((r) => (r.id === reportId ? { ...r, status } : r))
+    )
+  }
+
   if (authLoading) {
     return (
       <div className="app-loading">
@@ -83,18 +109,31 @@ function App() {
   }
 
   return (
-    // The top-level layout: a two-column flexbox container
     <div className="app-layout">
-      {/* LEFT COLUMN (30%): report list + auth panel or submission form */}
+      {/* LEFT: report list + auth or submit form */}
       <Sidebar
         session={session}
         reports={reports}
         reportsLoading={reportsLoading}
         onNewReport={handleNewReport}
+        onUpdateReport={handleUpdateReport}
+        clearanceLevel={clearanceLevel}
+        previewCoords={previewCoords}
       />
 
-      {/* RIGHT COLUMN (70%): the interactive Leaflet map */}
-      <MapView reports={reports} />
+      {/* RIGHT: full-height interactive map */}
+      <MapView
+        reports={reports}
+        clearanceLevel={clearanceLevel}
+        previewCoords={previewCoords}
+        onMapClick={handleMapClick}
+      />
+
+      {/* OVERLAY: clearance level panel — floats over the top-right of the map */}
+      <ClearancePanel
+        clearanceLevel={clearanceLevel}
+        onLevelChange={setClearanceLevel}
+      />
     </div>
   )
 }

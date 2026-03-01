@@ -1,51 +1,52 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../supabaseClient'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ReportForm — lets a logged-in user submit a new incident report
+// ReportForm — lets a logged-in user (clearance level 2+) submit a report
 //
-// We use React Hook Form (useForm) to manage the form state and validation.
-// This is much cleaner than managing each field with useState manually.
-//
-// Props:
-//   session   : the current Supabase auth session (contains the user's ID)
-//   onNewReport : callback to add the new report to the map + list instantly
+// New in this version:
+//   - Receives `previewCoords` prop — when the user clicks the map, this is set
+//     and we auto-fill the latitude/longitude fields via React Hook Form's
+//     setValue() function.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const INCIDENT_TYPES = [
-  { value: 'flood',       label: 'Flood'       },
-  { value: 'fire',        label: 'Fire'        },
-  { value: 'earthquake',  label: 'Earthquake'  },
-  { value: 'other',       label: 'Other'       },
+  { value: 'flood',      label: 'Flood'      },
+  { value: 'fire',       label: 'Fire'       },
+  { value: 'earthquake', label: 'Earthquake' },
+  { value: 'other',      label: 'Other'      },
 ]
 
-function ReportForm({ session, onNewReport }) {
-  const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState(null)
+function ReportForm({ session, onNewReport, previewCoords }) {
+  const [submitting, setSubmitting]       = useState(false)
+  const [submitError, setSubmitError]     = useState(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
 
-  // useForm returns helpers we use to wire up our form:
-  //   register   — connects an input to React Hook Form
-  //   handleSubmit — wraps our submit function with validation
-  //   reset      — clears all fields after a successful submit
-  //   formState.errors — contains validation error messages
   const {
     register,
     handleSubmit,
     reset,
+    setValue,           // lets us programmatically set a field's value
     formState: { errors },
   } = useForm()
 
-  // This function runs only when all fields pass validation.
+  // ── Auto-fill lat/lng when the user clicks the map ────────────────────────
+  // Whenever `previewCoords` changes (i.e. the user clicked a new spot on the
+  // map), we call setValue() to put those coordinates into the form fields.
+  // `shouldValidate: true` clears any existing validation errors on those fields.
+  useEffect(() => {
+    if (previewCoords) {
+      setValue('latitude',  previewCoords.lat, { shouldValidate: true, shouldDirty: true })
+      setValue('longitude', previewCoords.lng, { shouldValidate: true, shouldDirty: true })
+    }
+  }, [previewCoords, setValue])
+
   async function onSubmit(data) {
     setSubmitting(true)
     setSubmitError(null)
     setSubmitSuccess(false)
 
-    // Insert the new report into the Supabase "reports" table.
-    // .select().single() returns the newly created row so we can
-    // add it to the map right away without refetching everything.
     const { data: inserted, error } = await supabase
       .from('reports')
       .insert([{
@@ -54,7 +55,7 @@ function ReportForm({ session, onNewReport }) {
         type:        data.type,
         latitude:    parseFloat(data.latitude),
         longitude:   parseFloat(data.longitude),
-        user_id:     session.user.id,   // ties the report to the logged-in user
+        user_id:     session.user.id,
       }])
       .select()
       .single()
@@ -67,13 +68,11 @@ function ReportForm({ session, onNewReport }) {
       return
     }
 
-    // Tell the parent (App.jsx) about the new report so it appears
-    // on the map and in the list without a page refresh.
+    // Notify the parent — this adds the report to the list and clears the preview pin
     onNewReport(inserted)
     setSubmitSuccess(true)
-    reset()  // clear the form fields
+    reset()
 
-    // Auto-hide the success message after 3 seconds
     setTimeout(() => setSubmitSuccess(false), 3000)
   }
 
@@ -84,19 +83,15 @@ function ReportForm({ session, onNewReport }) {
         <span className="form-section-label">SUBMIT INCIDENT REPORT</span>
       </div>
 
-      {/* noValidate tells the browser not to show its own validation UI —
-          we handle validation ourselves with React Hook Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="report-form" noValidate>
 
-        {/* ── Incident Title ──────────────────────────────────────────── */}
+        {/* ── Title ───────────────────────────────────────────────────── */}
         <div className="field-group">
           <label className="field-label" htmlFor="title">TITLE</label>
           <input
             id="title"
             className={`field-input ${errors.title ? 'field-input--error' : ''}`}
             placeholder="e.g. Bridge flooding on Hwy 11"
-            // register connects this input to React Hook Form and sets the
-            // "required" validation rule
             {...register('title', { required: 'Title is required' })}
           />
           {errors.title && (
@@ -104,7 +99,7 @@ function ReportForm({ session, onNewReport }) {
           )}
         </div>
 
-        {/* ── Incident Type ───────────────────────────────────────────── */}
+        {/* ── Incident type ───────────────────────────────────────────── */}
         <div className="field-group">
           <label className="field-label" htmlFor="type">TYPE</label>
           <select
@@ -122,7 +117,7 @@ function ReportForm({ session, onNewReport }) {
           )}
         </div>
 
-        {/* ── Description (optional) ──────────────────────────────────── */}
+        {/* ── Description ─────────────────────────────────────────────── */}
         <div className="field-group">
           <label className="field-label" htmlFor="description">
             DESCRIPTION <span className="field-optional">(optional)</span>
@@ -130,16 +125,21 @@ function ReportForm({ session, onNewReport }) {
           <textarea
             id="description"
             className="field-input field-textarea"
-            placeholder="Additional details — severity, affected area, road closures..."
+            placeholder="Severity, affected area, road closures…"
             rows={3}
             {...register('description')}
           />
         </div>
 
-        {/* ── Coordinates — lat and lng side by side ───────────────────── */}
+        {/* ── Coordinates ─────────────────────────────────────────────── */}
+        {/* These fields are auto-filled when the user clicks the map,
+            but can also be typed in manually. */}
         <div className="field-row">
           <div className="field-group">
-            <label className="field-label" htmlFor="latitude">LATITUDE</label>
+            <label className="field-label" htmlFor="latitude">
+              LATITUDE
+              {previewCoords && <span className="field-pin-hint"> ⊕</span>}
+            </label>
             <input
               id="latitude"
               type="number"
@@ -148,8 +148,8 @@ function ReportForm({ session, onNewReport }) {
               placeholder="e.g. 19.7241"
               {...register('latitude', {
                 required: 'Required',
-                min: { value: -90,  message: '−90 to 90'   },
-                max: { value:  90,  message: '−90 to 90'   },
+                min: { value: -90,  message: '−90 to 90'  },
+                max: { value:  90,  message: '−90 to 90'  },
               })}
             />
             {errors.latitude && (
@@ -164,7 +164,7 @@ function ReportForm({ session, onNewReport }) {
               type="number"
               step="any"
               className={`field-input ${errors.longitude ? 'field-input--error' : ''}`}
-              placeholder="e.g. -155.0868"
+              placeholder="e.g. −155.09"
               {...register('longitude', {
                 required: 'Required',
                 min: { value: -180, message: '−180 to 180' },
@@ -177,11 +177,15 @@ function ReportForm({ session, onNewReport }) {
           </div>
         </div>
 
-        {/* ── Feedback messages ───────────────────────────────────────── */}
-        {submitError && (
-          <div className="form-feedback form-feedback--error">
-            ⚠ {submitError}
+        {/* ── Tip when no preview coords are set ── */}
+        {!previewCoords && (
+          <div className="form-map-tip">
+            💡 Click anywhere on the map to auto-fill coordinates
           </div>
+        )}
+
+        {submitError && (
+          <div className="form-feedback form-feedback--error">⚠ {submitError}</div>
         )}
         {submitSuccess && (
           <div className="form-feedback form-feedback--success">
@@ -189,7 +193,6 @@ function ReportForm({ session, onNewReport }) {
           </div>
         )}
 
-        {/* ── Submit button ───────────────────────────────────────────── */}
         <button type="submit" className="btn-submit" disabled={submitting}>
           {submitting ? 'TRANSMITTING…' : 'SUBMIT REPORT'}
         </button>
