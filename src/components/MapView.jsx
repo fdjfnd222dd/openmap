@@ -153,7 +153,7 @@ function HeatmapLayer({ reports }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget }) {
+function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget, onSelectReport }) {
   // Local state for the heatmap toggle (only relevant at level 4+)
   const [showHeatmap, setShowHeatmap] = useState(false)
 
@@ -246,6 +246,12 @@ function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget
                     <span className="popup-coords">
                       {lat.toFixed(4)}°, {lng.toFixed(4)}°
                     </span>
+                    <button
+                      className="popup-detail-btn"
+                      onClick={() => onSelectReport(report)}
+                    >
+                      VIEW DETAILS ›
+                    </button>
                   </div>
                 </Popup>
               </Marker>

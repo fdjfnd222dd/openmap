@@ -34,10 +34,67 @@ src/
 
 ## Supabase Setup
 - Project URL and anon key are already configured in `src/supabaseClient.js`
-- Database has a `reports` table with columns:
-  `id, created_at, user_id, title, description, type, latitude, longitude`
 - Email/password auth is enabled
 - Free tier — project may pause after 7 days of inactivity; restore from the Supabase dashboard
+
+### IMPORTANT — Supabase change policy
+**Whenever a new feature requires a Supabase change (new table, new column, new RLS policy, new index, etc.), always tell the user what SQL to run in the Supabase SQL Editor BEFORE or alongside delivering the code. Never assume the database is already set up.**
+
+### Current tables
+
+**`reports`**
+```sql
+id          bigint (PK, auto-increment)   ← bigint, NOT uuid
+created_at  timestamptz
+user_id     uuid
+title       text
+description text
+type        text   -- 'flood' | 'fire' | 'earthquake' | 'other'
+latitude    numeric
+longitude   numeric
+status      text   -- 'verified' | 'false' | null (set by level-5 users)
+```
+
+**`comments`**
+```sql
+id          bigint (PK, GENERATED ALWAYS AS IDENTITY)
+created_at  timestamptz DEFAULT now()
+report_id   bigint REFERENCES reports(id) ON DELETE CASCADE  ← bigint to match reports.id
+user_id     uuid REFERENCES auth.users(id) ON DELETE SET NULL
+content     text NOT NULL
+```
+
+RLS policies on `comments`:
+```sql
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "comments_select" ON comments FOR SELECT USING (true);
+CREATE POLICY "comments_insert" ON comments FOR INSERT WITH CHECK (auth.uid() = user_id);
+```
+
+Also enable Realtime replication on `comments` in Supabase Table Editor.
+
+**`profiles`**
+```sql
+id                uuid (PK) REFERENCES auth.users(id)
+email             text
+trust_score       integer DEFAULT 0
+reports_submitted integer DEFAULT 0
+reports_verified  integer DEFAULT 0
+created_at        timestamptz DEFAULT now()
+```
+
+RLS policies on `profiles`:
+```sql
+-- Read: public
+CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);
+-- Insert: own row only
+CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+-- Update: any authenticated user (needed for level-5 verdicts affecting other users' scores)
+CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (auth.role() = 'authenticated');
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+```
+
+Note: profile rows are auto-created on first sign-in via `onAuthStateChange`. Existing users without a row must sign out and back in to get one.
 
 ## Design System
 - **Theme:** Dark industrial / emergency ops aesthetic

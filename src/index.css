@@ -1657,3 +1657,247 @@ body {
   color: var(--accent);
   line-height: 1;
 }
+
+/* ── 19. REPORT DETAIL PANEL ─────────────────────────────────────────────────
+   Slides in over the sidebar when a report card or map pin is clicked.
+   Takes up the full sidebar height below the header.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.report-detail {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ← BACK TO LIST button */
+.detail-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 16px;
+  background: var(--bg-card);
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.detail-back-btn:hover {
+  color: var(--accent);
+  background: var(--bg-card-hover);
+}
+
+/* Scrollable content: report info + comment thread */
+.detail-body {
+  flex: 1 1 0;
+  overflow-y: auto;
+  padding: 14px 16px 4px;
+  min-height: 0;
+}
+
+.detail-body::-webkit-scrollbar       { width: 4px; }
+.detail-body::-webkit-scrollbar-track { background: transparent; }
+.detail-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Badge + verdict + trust score + time row at the top */
+.detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 9px;
+}
+
+.detail-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  margin-bottom: 8px;
+}
+
+.detail-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.detail-coords {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+/* ── 20. COMMENTS ────────────────────────────────────────────────────────────
+   Comment thread shown below the report info in the detail panel.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.comments-section {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.comments-header {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.comments-count {
+  color: var(--accent);
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.comment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comment-author {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.comment-time {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.comment-content {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.comment-empty {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 16px 0;
+  opacity: 0.6;
+}
+
+/* Fixed footer with comment input */
+.detail-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg-bottom);
+  padding: 10px 12px;
+}
+
+.comment-form {
+  display: flex;
+  gap: 6px;
+}
+
+.comment-input {
+  flex: 1;
+  padding: 7px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.comment-input:focus {
+  border-color: var(--border-focus);
+}
+
+.comment-input::placeholder {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.comment-submit-btn {
+  padding: 7px 12px;
+  background: var(--accent);
+  color: #0a0b0d;
+  border: none;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.comment-submit-btn:hover:not(:disabled) { opacity: 0.85; }
+.comment-submit-btn:disabled             { opacity: 0.4; cursor: not-allowed; }
+
+/* Shown when user can't comment (not logged in or low clearance) */
+.comment-gate {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* "VIEW DETAILS ›" button inside map popups */
+.popup-detail-btn {
+  margin-top: 4px;
+  padding: 4px 8px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.15s;
+  align-self: flex-start;
+}
+
+.popup-detail-btn:hover {
+  background: var(--accent);
+  color: #0a0b0d;
+}

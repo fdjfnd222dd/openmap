@@ -33,8 +33,10 @@ function App() {
   })
 
   // ── Map interaction state ─────────────────────────────────────────────────
-  const [previewCoords, setPreviewCoords] = useState(null)
-  const [flyTarget, setFlyTarget]         = useState(null)
+  const [previewCoords, setPreviewCoords]     = useState(null)
+  const [flyTarget, setFlyTarget]             = useState(null)
+  // selectedReport drives the detail panel — set when any card or map pin is clicked
+  const [selectedReport, setSelectedReport]   = useState(null)
 
   // ── Filter state ──────────────────────────────────────────────────────────
   const [activeTypes,    setActiveTypes]    = useState([])
@@ -174,8 +176,15 @@ function App() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  function handleMapClick(lat, lng)    { setPreviewCoords({ lat, lng }) }
-  function handleSelectReport(report)  { setFlyTarget(report) }
+  function handleMapClick(lat, lng) { setPreviewCoords({ lat, lng }) }
+
+  // Fly the map to the report AND open the detail panel
+  function handleSelectReport(report) {
+    setFlyTarget(report)
+    setSelectedReport(report)
+  }
+
+  function handleCloseDetail() { setSelectedReport(null) }
 
   function handleNewReport(newReport) {
     setReports((prev) => [newReport, ...prev])
@@ -185,6 +194,10 @@ function App() {
   function handleUpdateReport(reportId, status) {
     setReports((prev) =>
       prev.map((r) => (r.id === reportId ? { ...r, status } : r))
+    )
+    // Keep the detail panel in sync if the updated report is currently open
+    setSelectedReport((prev) =>
+      prev && prev.id === reportId ? { ...prev, status } : prev
     )
   }
 
@@ -233,6 +246,8 @@ function App() {
         onToggleType={handleToggleType}
         onToggleStatus={handleToggleStatus}
         onClearFilters={handleClearFilters}
+        selectedReport={selectedReport}
+        onCloseDetail={handleCloseDetail}
       />
 
       <MapView
@@ -241,6 +256,7 @@ function App() {
         previewCoords={previewCoords}
         onMapClick={handleMapClick}
         flyTarget={flyTarget}
+        onSelectReport={handleSelectReport}
       />
 
       <ClearancePanel

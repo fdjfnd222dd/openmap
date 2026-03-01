@@ -1,5 +1,6 @@
 import ReportList from './ReportList'
 import ReportForm from './ReportForm'
+import ReportDetail from './ReportDetail'
 import AuthPanel from './AuthPanel'
 import FilterBar from './FilterBar'
 import { supabase } from '../supabaseClient'
@@ -30,6 +31,8 @@ function Sidebar({
   onToggleType,
   onToggleStatus,
   onClearFilters,
+  selectedReport,  // if set, show the detail panel instead of the list
+  onCloseDetail,
 }) {
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -94,51 +97,63 @@ function Sidebar({
         )}
       </header>
 
-      {/* ── Status bar ──────────────────────────────────────────────────── */}
-      <div className="status-bar">
-        <div className="status-left">
-          <span className="status-dot" />
-          <span className="status-label">LIVE FEED</span>
-        </div>
-        <div className="status-right">
-          {/* Show "filtered / total" when filters are active, otherwise just total */}
-          {reports.length < totalCount ? (
-            <span className="status-count">{reports.length}
-              <span className="status-count-total"> / {totalCount}</span>
-            </span>
-          ) : (
-            <span className="status-count">{totalCount}</span>
-          )}
-          <span className="status-count-label">REPORTS</span>
-        </div>
-      </div>
-
-      {/* ── Filter bar — sits between status bar and list, does not scroll ── */}
-      <FilterBar
-        activeTypes={activeTypes}
-        activeStatuses={activeStatuses}
-        onToggleType={onToggleType}
-        onToggleStatus={onToggleStatus}
-        onClearAll={onClearFilters}
-      />
-
-      {/* ── Scrollable report list ───────────────────────────────────────── */}
-      <div className="sidebar-list-area">
-        <ReportList
-          reports={reports}
-          loading={reportsLoading}
+      {/* ── When a report is selected, swap the whole body for the detail panel ── */}
+      {selectedReport ? (
+        <ReportDetail
+          report={selectedReport}
+          session={session}
           clearanceLevel={clearanceLevel}
-          onUpdateReport={onUpdateReport}
-          onSelectReport={onSelectReport}
+          onClose={onCloseDetail}
           profiles={profiles}
-          onProfileRefresh={onProfileRefresh}
         />
-      </div>
+      ) : (
+        <>
+          {/* ── Status bar ── */}
+          <div className="status-bar">
+            <div className="status-left">
+              <span className="status-dot" />
+              <span className="status-label">LIVE FEED</span>
+            </div>
+            <div className="status-right">
+              {reports.length < totalCount ? (
+                <span className="status-count">{reports.length}
+                  <span className="status-count-total"> / {totalCount}</span>
+                </span>
+              ) : (
+                <span className="status-count">{totalCount}</span>
+              )}
+              <span className="status-count-label">REPORTS</span>
+            </div>
+          </div>
 
-      {/* ── Bottom panel ────────────────────────────────────────────────── */}
-      <div className="sidebar-bottom">
-        {renderBottomPanel()}
-      </div>
+          {/* ── Filter bar ── */}
+          <FilterBar
+            activeTypes={activeTypes}
+            activeStatuses={activeStatuses}
+            onToggleType={onToggleType}
+            onToggleStatus={onToggleStatus}
+            onClearAll={onClearFilters}
+          />
+
+          {/* ── Scrollable report list ── */}
+          <div className="sidebar-list-area">
+            <ReportList
+              reports={reports}
+              loading={reportsLoading}
+              clearanceLevel={clearanceLevel}
+              onUpdateReport={onUpdateReport}
+              onSelectReport={onSelectReport}
+              profiles={profiles}
+              onProfileRefresh={onProfileRefresh}
+            />
+          </div>
+
+          {/* ── Bottom panel (form / auth / gate) ── */}
+          <div className="sidebar-bottom">
+            {renderBottomPanel()}
+          </div>
+        </>
+      )}
 
     </aside>
   )
