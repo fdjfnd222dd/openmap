@@ -15,61 +15,52 @@ import ClearancePanel from './components/ClearancePanel'
 //   5. `flyTarget`       — report the map should fly to when a card is clicked
 //   6. `activeTypes`     — type filters currently active (empty = show all)
 //   7. `activeStatuses`  — status filters currently active (empty = show all)
+//   8. `profiles`        — map of { userId → profile } for trust score display
 //
-// `filteredReports` is computed (not stored) from reports + active filters
-// and is what gets passed to the Sidebar list and MapView pins.
+// `filteredReports` is computed (not stored) from reports + active filters.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function App() {
-  const [session, setSession] = useState(null)
-  const [authLoading, setAuthLoading] = useState(true)
-  const [reports, setReports] = useState([])
+  const [session, setSession]               = useState(null)
+  const [authLoading, setAuthLoading]       = useState(true)
+  const [reports, setReports]               = useState([])
   const [reportsLoading, setReportsLoading] = useState(true)
 
-  // ── Clearance level (1–5, default is PUBLIC = 1) ──────────────────────────
-  // We use a lazy initializer (the function passed to useState) to set the
-  // data-clearance attribute on the root element SYNCHRONOUSLY on the very
-  // first render — this prevents any brief flash of the wrong accent color.
+  // ── Clearance level ───────────────────────────────────────────────────────
   const [clearanceLevel, setClearanceLevel] = useState(() => {
     document.documentElement.setAttribute('data-clearance', 1)
     return 1
   })
 
-  // ── Preview pin — set when the user clicks the map ───────────────────────
-  // { lat: number, lng: number } or null when there is no pending pin.
+  // ── Map interaction state ─────────────────────────────────────────────────
   const [previewCoords, setPreviewCoords] = useState(null)
-
-  // ── Fly target — set when the user clicks a report card ──────────────────
-  // MapView watches this and calls Leaflet's flyTo() to pan/zoom to the report.
-  const [flyTarget, setFlyTarget] = useState(null)
+  const [flyTarget, setFlyTarget]         = useState(null)
 
   // ── Filter state ──────────────────────────────────────────────────────────
-  // Each is an array of active filter values. Empty array = no filter (show all).
   const [activeTypes,    setActiveTypes]    = useState([])
   const [activeStatuses, setActiveStatuses] = useState([])
 
-  // Derived value: the filtered subset of reports shown in the list and on the map.
-  // This is computed on every render — no need to store it in state.
-  const filteredReports = reports.filter((report) => {
-    // Type filter: skip if this type is not in the active set
-    if (activeTypes.length > 0 && !activeTypes.includes(report.type)) return false
+  // ── Profiles — keyed by user ID ───────────────────────────────────────────
+  // Stores trust score, reports_submitted, and reports_verified for each
+  // user whose reports we've loaded. Updated after submissions and verdicts.
+  const [profiles, setProfiles] = useState({})
 
-    // Status filter: treat null/undefined status as 'unverified'
+  // Computed filtered reports (not stored in state)
+  const filteredReports = reports.filter((report) => {
+    if (activeTypes.length > 0 && !activeTypes.includes(report.type)) return false
     if (activeStatuses.length > 0) {
       const status = report.status || 'unverified'
       if (!activeStatuses.includes(status)) return false
     }
-
     return true
   })
 
-  // Whenever the clearance level changes, update the CSS data attribute so that
-  // the accent color CSS variables switch instantly across the whole UI.
+  // ── CSS accent color for clearance level ─────────────────────────────────
   useEffect(() => {
     document.documentElement.setAttribute('data-clearance', clearanceLevel)
   }, [clearanceLevel])
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  // ── Auth — listen for login/logout events ─────────────────────────────────
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -78,46 +69,34 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session)
+
+      // When a user signs in for the first time, create their profile row.
+      // `ignoreDuplicates: true` means if the row already exists, do nothing —
+      // so existing trust scores are never accidentally reset.
+      if (event === 'SIGNED_IN' && session) {
+        await supabase.from('profiles').upsert(
+          {
+            id:                session.user.id,
+            email:             session.user.email,
+            trust_score:       0,
+            reports_submitted: 0,
+            reports_verified:  0,
+          },
+          { onConflict: 'id', ignoreDuplicates: true }
+        )
+        // Load this user's profile into state (creates or loads existing)
+        refreshProfile(session.user.id)
+      }
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Load reports ──────────────────────────────────────────────────────────
   useEffect(() => {
     fetchReports()
-  }, [])
-
-  // ── Real-time subscription ─────────────────────────────────────────────────
-  // Listens for INSERT events on the reports table so new reports from ANY
-  // user appear on the map and in the list without a page refresh.
-  //
-  // IMPORTANT: For this to work you must enable Realtime for your reports table
-  // in Supabase. Go to: Database → Replication → select the `reports` table.
-  useEffect(() => {
-    const channel = supabase
-      .channel('reports-live')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'reports' },
-        (payload) => {
-          const incoming = payload.new
-          // Avoid adding duplicates: if THIS user just submitted the report,
-          // handleNewReport already added it optimistically, so we skip it.
-          setReports((prev) => {
-            if (prev.some((r) => r.id === incoming.id)) return prev
-            return [incoming, ...prev]
-          })
-        }
-      )
-      .subscribe()
-
-    // Unsubscribe when the component unmounts to avoid memory leaks
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [])
 
   async function fetchReports() {
@@ -130,58 +109,100 @@ function App() {
 
     if (error) {
       console.error('Error fetching reports:', error.message)
-    } else {
-      setReports(data || [])
+      setReportsLoading(false)
+      return
+    }
+
+    setReports(data || [])
+
+    // Batch-fetch profiles for every unique submitter in one query.
+    // This powers the trust score badges on each report card.
+    const userIds = [...new Set((data || []).map(r => r.user_id).filter(Boolean))]
+    if (userIds.length > 0) {
+      const { data: profileRows } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds)
+
+      if (profileRows) {
+        const map = {}
+        profileRows.forEach(p => { map[p.id] = p })
+        setProfiles(prev => ({ ...prev, ...map }))
+      }
     }
 
     setReportsLoading(false)
   }
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
-  // Called when the user clicks on the map — places a preview pin
-  function handleMapClick(lat, lng) {
-    setPreviewCoords({ lat, lng })
+  // Fetches and caches a single profile by user ID.
+  // Called after submissions and verdicts to keep scores current.
+  async function refreshProfile(userId) {
+    if (!userId) return
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+    if (data) {
+      setProfiles(prev => ({ ...prev, [data.id]: data }))
+    }
   }
 
-  // Called when the form is submitted — adds the report to the list,
-  // removes the preview pin, and clears it from the map.
+  // ── Real-time subscription ────────────────────────────────────────────────
+  useEffect(() => {
+    const channel = supabase
+      .channel('reports-live')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'reports' },
+        (payload) => {
+          const incoming = payload.new
+          setReports((prev) => {
+            if (prev.some((r) => r.id === incoming.id)) return prev
+            return [incoming, ...prev]
+          })
+          // Also ensure the submitter's profile is loaded for the trust badge
+          if (incoming.user_id) {
+            refreshProfile(incoming.user_id)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
+  function handleMapClick(lat, lng)    { setPreviewCoords({ lat, lng }) }
+  function handleSelectReport(report)  { setFlyTarget(report) }
+
   function handleNewReport(newReport) {
     setReports((prev) => [newReport, ...prev])
     setPreviewCoords(null)
   }
 
-  // Called when a user clicks a report card — triggers the map to fly to it.
-  function handleSelectReport(report) {
-    setFlyTarget(report)
-  }
-
-  // Toggle a type in or out of the active type filters
-  function handleToggleType(type) {
-    setActiveTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    )
-  }
-
-  // Toggle a status in or out of the active status filters
-  function handleToggleStatus(status) {
-    setActiveStatuses((prev) =>
-      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
-    )
-  }
-
-  // Clear all active filters at once
-  function handleClearFilters() {
-    setActiveTypes([])
-    setActiveStatuses([])
-  }
-
-  // Called by Level 5 users to mark a report as 'verified' or 'false'.
-  // Updates the local state optimistically so the UI responds instantly.
   function handleUpdateReport(reportId, status) {
     setReports((prev) =>
       prev.map((r) => (r.id === reportId ? { ...r, status } : r))
     )
+  }
+
+  function handleToggleType(type) {
+    setActiveTypes((prev) =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    )
+  }
+
+  function handleToggleStatus(status) {
+    setActiveStatuses((prev) =>
+      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+    )
+  }
+
+  function handleClearFilters() {
+    setActiveTypes([])
+    setActiveStatuses([])
   }
 
   if (authLoading) {
@@ -195,7 +216,6 @@ function App() {
 
   return (
     <div className="app-layout">
-      {/* LEFT: report list + auth or submit form */}
       <Sidebar
         session={session}
         reports={filteredReports}
@@ -204,8 +224,10 @@ function App() {
         onNewReport={handleNewReport}
         onUpdateReport={handleUpdateReport}
         onSelectReport={handleSelectReport}
+        onProfileRefresh={refreshProfile}
         clearanceLevel={clearanceLevel}
         previewCoords={previewCoords}
+        profiles={profiles}
         activeTypes={activeTypes}
         activeStatuses={activeStatuses}
         onToggleType={handleToggleType}
@@ -213,7 +235,6 @@ function App() {
         onClearFilters={handleClearFilters}
       />
 
-      {/* RIGHT: full-height interactive map — uses filteredReports so pins match the list */}
       <MapView
         reports={filteredReports}
         clearanceLevel={clearanceLevel}
@@ -222,7 +243,6 @@ function App() {
         flyTarget={flyTarget}
       />
 
-      {/* OVERLAY: clearance level panel — floats over the top-right of the map */}
       <ClearancePanel
         clearanceLevel={clearanceLevel}
         onLevelChange={setClearanceLevel}

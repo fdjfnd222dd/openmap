@@ -1585,3 +1585,75 @@ body {
 .cluster-icon:hover {
   transform: scale(1.1);
 }
+
+/* ── 18. TRUST & CREDIBILITY SYSTEM ─────────────────────────────────────────
+   Trust score badges shown on each report card and in the submit form header.
+   Score tiers:
+     0–9   — default (muted, new/unknown reporter)
+     10–49 — mid (accent color, some track record)
+     50+   — high (green, trusted reporter)
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Right cluster in card-meta — trust badge + timestamp side by side */
+.card-meta-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Trust score pill on report cards */
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  padding: 2px 5px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Score ≥ 10 — uses current clearance accent color */
+.trust-badge--mid {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-dim);
+}
+
+/* Score ≥ 50 — green "trusted" tier */
+.trust-badge--high {
+  color: var(--success);
+  border-color: rgba(34, 197, 94, 0.3);
+  background: var(--success-bg);
+}
+
+/* Trust score badge in the report form header */
+.form-trust-badge {
+  margin-left: auto;   /* pushes it to the right side of the header row */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.form-trust-icon {
+  font-size: 10px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.form-trust-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--accent);
+  line-height: 1;
+}

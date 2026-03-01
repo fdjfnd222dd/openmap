@@ -21,8 +21,10 @@ function Sidebar({
   onNewReport,
   onUpdateReport,
   onSelectReport,
+  onProfileRefresh,
   clearanceLevel,
   previewCoords,
+  profiles,
   activeTypes,
   activeStatuses,
   onToggleType,
@@ -32,6 +34,9 @@ function Sidebar({
   async function handleLogout() {
     await supabase.auth.signOut()
   }
+
+  // The current user's own profile — needed by ReportForm for trust score display
+  const userProfile = session ? profiles[session.user.id] : null
 
   // Decide what to render in the bottom panel
   function renderBottomPanel() {
@@ -59,6 +64,8 @@ function Sidebar({
         session={session}
         onNewReport={onNewReport}
         previewCoords={previewCoords}
+        userProfile={userProfile}
+        onProfileRefresh={onProfileRefresh}
       />
     )
   }
@@ -123,6 +130,8 @@ function Sidebar({
           clearanceLevel={clearanceLevel}
           onUpdateReport={onUpdateReport}
           onSelectReport={onSelectReport}
+          profiles={profiles}
+          onProfileRefresh={onProfileRefresh}
         />
       </div>
 

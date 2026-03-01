@@ -5,10 +5,12 @@ import { supabase } from '../supabaseClient'
 // ─────────────────────────────────────────────────────────────────────────────
 // ReportForm — lets a logged-in user (clearance level 2+) submit a report
 //
-// New in this version:
-//   - Receives `previewCoords` prop — when the user clicks the map, this is set
-//     and we auto-fill the latitude/longitude fields via React Hook Form's
-//     setValue() function.
+// Props:
+//   session          — the Supabase auth session (for user.id)
+//   onNewReport      — callback(report) adds the new report to the list
+//   previewCoords    — {lat, lng} from a map click; auto-fills lat/lng fields
+//   userProfile      — the current user's profile row (for trust score display)
+//   onProfileRefresh — fn(userId) refreshes the profile cache after submit
 // ─────────────────────────────────────────────────────────────────────────────
 
 const INCIDENT_TYPES = [
@@ -18,7 +20,7 @@ const INCIDENT_TYPES = [
   { value: 'other',      label: 'Other'      },
 ]
 
-function ReportForm({ session, onNewReport, previewCoords }) {
+function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfileRefresh }) {
   const [submitting, setSubmitting]       = useState(false)
   const [submitError, setSubmitError]     = useState(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -32,9 +34,6 @@ function ReportForm({ session, onNewReport, previewCoords }) {
   } = useForm()
 
   // ── Auto-fill lat/lng when the user clicks the map ────────────────────────
-  // Whenever `previewCoords` changes (i.e. the user clicked a new spot on the
-  // map), we call setValue() to put those coordinates into the form fields.
-  // `shouldValidate: true` clears any existing validation errors on those fields.
   useEffect(() => {
     if (previewCoords) {
       setValue('latitude',  previewCoords.lat, { shouldValidate: true, shouldDirty: true })
@@ -68,7 +67,17 @@ function ReportForm({ session, onNewReport, previewCoords }) {
       return
     }
 
-    // Notify the parent — this adds the report to the list and clears the preview pin
+    // Increment the submitter's reports_submitted count in their profile
+    const newCount = (userProfile?.reports_submitted || 0) + 1
+    await supabase
+      .from('profiles')
+      .update({ reports_submitted: newCount })
+      .eq('id', session.user.id)
+
+    // Refresh the cached profile so the trust badge reflects the new count
+    onProfileRefresh(session.user.id)
+
+    // Notify the parent — adds the report to the list and clears the preview pin
     onNewReport(inserted)
     setSubmitSuccess(true)
     reset()
@@ -78,9 +87,19 @@ function ReportForm({ session, onNewReport, previewCoords }) {
 
   return (
     <div className="report-form-wrapper">
+
+      {/* ── Section header with trust score badge ── */}
       <div className="form-section-header">
         <span className="form-section-icon">＋</span>
         <span className="form-section-label">SUBMIT INCIDENT REPORT</span>
+
+        {/* Trust score — shown when the profile has loaded */}
+        {userProfile != null && (
+          <div className="form-trust-badge" title="Your current trust score">
+            <span className="form-trust-icon">◈</span>
+            <span className="form-trust-value">{userProfile.trust_score}</span>
+          </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="report-form" noValidate>
