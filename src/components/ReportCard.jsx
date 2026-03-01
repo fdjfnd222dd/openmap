@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { trustClass } from '../utils/trust'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ReportCard — a single incident in the sidebar list
@@ -46,15 +47,6 @@ function shortId(uuid) {
   return uuid ? uuid.split('-')[0].toUpperCase() : '—'
 }
 
-// Returns a CSS modifier class based on the trust score tier:
-//   0–9    → default (muted)
-//   10–49  → mid (accent color)
-//   50+    → high (green)
-function trustClass(score) {
-  if (score >= 50) return 'trust-badge--high'
-  if (score >= 10) return 'trust-badge--mid'
-  return ''
-}
 
 function ReportCard({
   report,

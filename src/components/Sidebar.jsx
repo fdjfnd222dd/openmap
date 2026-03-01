@@ -1,23 +1,39 @@
+import { useState, useEffect, useRef } from 'react'
 import ReportList from './ReportList'
 import ReportForm from './ReportForm'
 import ReportDetail from './ReportDetail'
 import AuthPanel from './AuthPanel'
 import FilterBar from './FilterBar'
 import { supabase } from '../supabaseClient'
+import { trustClass } from '../utils/trust'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sidebar — the left column (30% of the screen)
+// Sidebar — the left column (40% of the screen)
 //
-// The bottom panel now depends on both login status AND clearance level:
-//   - Not logged in → show AuthPanel
-//   - Logged in + level 1 → show upgrade nudge (can't submit without level 2)
-//   - Logged in + level 2+ → show ReportForm
+// Four tabs replace the old list + bottom-panel layout:
+//   TAB 1 — NEW REPORT    : submit form (clearance 2+) or auth/gate
+//   TAB 2 — INCIDENTS     : live feed list with notification dot
+//   TAB 3 — PROFILE       : current user's trust stats
+//   TAB 4 — LEADERBOARD   : top-10 by trust score with medal rows
+//
+// When `selectedReport` is set the tab content area is replaced by
+// ReportDetail; the tab bar stays visible and clicking any tab closes
+// the detail and returns to that tab.
 // ─────────────────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { id: 'report',      icon: '+',  label: 'NEW REPORT'  },
+  { id: 'incidents',   icon: '📡', label: 'INCIDENTS'   },
+  { id: 'profile',     icon: '👤', label: 'PROFILE'     },
+  { id: 'leaderboard', icon: '🏆', label: 'LEADERBOARD' },
+]
+
+const MEDALS = ['🥇', '🥈', '🥉']
 
 function Sidebar({
   session,
-  reports,        // already filtered — used for the list
-  totalCount,     // unfiltered count — used in the status bar
+  reports,
+  totalCount,
   reportsLoading,
   onNewReport,
   onUpdateReport,
@@ -31,37 +47,78 @@ function Sidebar({
   onToggleType,
   onToggleStatus,
   onClearFilters,
-  selectedReport,  // if set, show the detail panel instead of the list
+  selectedReport,
   onCloseDetail,
 }) {
+  const [activeTab, setActiveTab]               = useState('incidents')
+  const [newIncidentNotif, setNewIncidentNotif] = useState(false)
+  const [leaderboard, setLeaderboard]           = useState([])
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false)
+
+  // Track previous reports.length to detect incoming real-time reports
+  const prevLengthRef  = useRef(null)
+  // Mirror activeTab in a ref so the effect below doesn't need it as a dep
+  const activeTabRef   = useRef('incidents')
+
+  const userProfile = session ? profiles[session.user.id] : null
+
+  // ── Notification dot ──────────────────────────────────────────────────────
+  // First render: seed the ref; afterwards detect increases
+  useEffect(() => {
+    if (prevLengthRef.current === null) {
+      prevLengthRef.current = reports.length
+      return
+    }
+    if (reports.length > prevLengthRef.current && activeTabRef.current !== 'incidents') {
+      setNewIncidentNotif(true)
+    }
+    prevLengthRef.current = reports.length
+  }, [reports.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Leaderboard — load lazily when tab opens ───────────────────────────────
+  useEffect(() => {
+    if (activeTab === 'leaderboard') loadLeaderboard()
+  }, [activeTab])
+
+  async function loadLeaderboard() {
+    setLeaderboardLoading(true)
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('trust_score', { ascending: false })
+      .limit(10)
+    setLeaderboard(data || [])
+    setLeaderboardLoading(false)
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
   }
 
-  // The current user's own profile — needed by ReportForm for trust score display
-  const userProfile = session ? profiles[session.user.id] : null
+  function handleTabChange(tab) {
+    setActiveTab(tab)
+    activeTabRef.current = tab
+    if (tab === 'incidents') setNewIncidentNotif(false)
+    if (selectedReport) onCloseDetail()
+  }
 
-  // Decide what to render in the bottom panel
-  function renderBottomPanel() {
-    if (!session) {
-      // Not logged in — show login/signup form
-      return <AuthPanel />
-    }
+  // ── Tab content renderers ──────────────────────────────────────────────────
+
+  function renderNewReportTab() {
+    if (!session) return <AuthPanel />
 
     if (clearanceLevel < 2) {
-      // Logged in but public clearance — can't submit yet
       return (
         <div className="clearance-gate">
           <div className="gate-icon">⬡</div>
           <p className="gate-title">VOLUNTEER CLEARANCE REQUIRED</p>
           <p className="gate-sub">
-            Enter your clearance code in the panel (top-right) to submit reports.
+            Enter your clearance code in the top-right panel to submit reports.
           </p>
         </div>
       )
     }
 
-    // Logged in + level 2+ — show the full report form
     return (
       <ReportForm
         session={session}
@@ -73,10 +130,163 @@ function Sidebar({
     )
   }
 
+  function renderIncidentsTab() {
+    return (
+      <>
+        {/* Status bar */}
+        <div className="status-bar">
+          <div className="status-left">
+            <span className="status-dot" />
+            <span className="status-label">LIVE FEED</span>
+          </div>
+          <div className="status-right">
+            {reports.length < totalCount ? (
+              <span className="status-count">{reports.length}
+                <span className="status-count-total"> / {totalCount}</span>
+              </span>
+            ) : (
+              <span className="status-count">{totalCount}</span>
+            )}
+            <span className="status-count-label">REPORTS</span>
+          </div>
+        </div>
+
+        {/* Filter bar */}
+        <FilterBar
+          activeTypes={activeTypes}
+          activeStatuses={activeStatuses}
+          onToggleType={onToggleType}
+          onToggleStatus={onToggleStatus}
+          onClearAll={onClearFilters}
+        />
+
+        {/* Scrollable report list */}
+        <div className="sidebar-list-area">
+          <ReportList
+            reports={reports}
+            loading={reportsLoading}
+            clearanceLevel={clearanceLevel}
+            onUpdateReport={onUpdateReport}
+            onSelectReport={onSelectReport}
+            profiles={profiles}
+            onProfileRefresh={onProfileRefresh}
+          />
+        </div>
+      </>
+    )
+  }
+
+  function renderProfileTab() {
+    if (!session) {
+      return (
+        <div className="profile-gate">
+          <div className="profile-gate-icon">👤</div>
+          <p className="profile-gate-msg">Sign in to view your profile.</p>
+        </div>
+      )
+    }
+
+    const score = userProfile?.trust_score || 0
+
+    return (
+      <div className="profile-tab">
+        {/* Trust score — large and prominent */}
+        <div className="profile-score-area">
+          <span className={`trust-badge trust-badge--large ${trustClass(score)}`}>
+            ◈ {score}
+          </span>
+          <div className="profile-score-label">TRUST SCORE</div>
+        </div>
+
+        <div className="profile-divider" />
+
+        {/* Email */}
+        <div className="profile-email">{session.user.email}</div>
+
+        {/* Stats grid */}
+        <div className="profile-stats">
+          <div className="profile-stat">
+            <span className="profile-stat-value">
+              {userProfile?.reports_submitted || 0}
+            </span>
+            <span className="profile-stat-label">SUBMITTED</span>
+          </div>
+          <div className="profile-stat">
+            <span className="profile-stat-value">
+              {userProfile?.reports_verified || 0}
+            </span>
+            <span className="profile-stat-label">VERIFIED</span>
+          </div>
+        </div>
+
+        <button className="btn-logout btn-logout--profile" onClick={handleLogout}>
+          Sign Out
+        </button>
+      </div>
+    )
+  }
+
+  function renderLeaderboardTab() {
+    if (leaderboardLoading) {
+      return (
+        <div className="leaderboard-loading">
+          <div className="loading-spinner" />
+          <span className="loading-text">LOADING RANKINGS…</span>
+        </div>
+      )
+    }
+
+    if (leaderboard.length === 0) {
+      return (
+        <div className="leaderboard-empty">
+          <p>No rankings yet.</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="leaderboard-list">
+        <div className="list-section-label">TOP TRUST RANKINGS</div>
+        {leaderboard.map((entry, index) => {
+          const rank  = index + 1
+          const isMe  = session && entry.id === session.user.id
+          const medal = MEDALS[index] || null
+
+          return (
+            <div
+              key={entry.id}
+              className={[
+                'leaderboard-row',
+                rank <= 3 ? `leaderboard-row--rank-${rank}` : '',
+                isMe      ? 'leaderboard-row--me'            : '',
+              ].join(' ')}
+            >
+              <span className="leaderboard-medal">
+                {medal
+                  ? medal
+                  : <span className="leaderboard-rank-num">{rank}</span>
+                }
+              </span>
+              <span className="leaderboard-email">
+                {entry.email}
+                {isMe && <span className="leaderboard-you-tag">YOU</span>}
+              </span>
+              <span className={`trust-badge ${trustClass(entry.trust_score)}`}>
+                ◈ {entry.trust_score}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
     <aside className="sidebar">
 
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+      {/* ── Header ── */}
       <header className="sidebar-header">
         <div className="header-brand">
           <div className="brand-eyebrow">PROJECT</div>
@@ -97,7 +307,24 @@ function Sidebar({
         )}
       </header>
 
-      {/* ── When a report is selected, swap the whole body for the detail panel ── */}
+      {/* ── Tab bar ── */}
+      <nav className="sidebar-tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            className={`sidebar-tab ${activeTab === tab.id ? 'sidebar-tab--active' : ''}`}
+            onClick={() => handleTabChange(tab.id)}
+          >
+            <span className="tab-icon">{tab.icon}</span>
+            <span className="tab-label">{tab.label}</span>
+            {tab.id === 'incidents' && newIncidentNotif && (
+              <span className="tab-notif-dot" />
+            )}
+          </button>
+        ))}
+      </nav>
+
+      {/* ── Content area — detail panel overrides tab content ── */}
       {selectedReport ? (
         <ReportDetail
           report={selectedReport}
@@ -107,52 +334,16 @@ function Sidebar({
           profiles={profiles}
         />
       ) : (
-        <>
-          {/* ── Status bar ── */}
-          <div className="status-bar">
-            <div className="status-left">
-              <span className="status-dot" />
-              <span className="status-label">LIVE FEED</span>
-            </div>
-            <div className="status-right">
-              {reports.length < totalCount ? (
-                <span className="status-count">{reports.length}
-                  <span className="status-count-total"> / {totalCount}</span>
-                </span>
-              ) : (
-                <span className="status-count">{totalCount}</span>
-              )}
-              <span className="status-count-label">REPORTS</span>
-            </div>
-          </div>
-
-          {/* ── Filter bar ── */}
-          <FilterBar
-            activeTypes={activeTypes}
-            activeStatuses={activeStatuses}
-            onToggleType={onToggleType}
-            onToggleStatus={onToggleStatus}
-            onClearAll={onClearFilters}
-          />
-
-          {/* ── Scrollable report list ── */}
-          <div className="sidebar-list-area">
-            <ReportList
-              reports={reports}
-              loading={reportsLoading}
-              clearanceLevel={clearanceLevel}
-              onUpdateReport={onUpdateReport}
-              onSelectReport={onSelectReport}
-              profiles={profiles}
-              onProfileRefresh={onProfileRefresh}
-            />
-          </div>
-
-          {/* ── Bottom panel (form / auth / gate) ── */}
-          <div className="sidebar-bottom">
-            {renderBottomPanel()}
-          </div>
-        </>
+        <div className={`sidebar-tab-content ${
+          activeTab === 'incidents'
+            ? 'sidebar-tab-content--flex'
+            : 'sidebar-tab-content--scroll'
+        }`}>
+          {activeTab === 'report'      && renderNewReportTab()}
+          {activeTab === 'incidents'   && renderIncidentsTab()}
+          {activeTab === 'profile'     && renderProfileTab()}
+          {activeTab === 'leaderboard' && renderLeaderboardTab()}
+        </div>
       )}
 
     </aside>

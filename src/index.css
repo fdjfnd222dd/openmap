@@ -95,7 +95,7 @@
   --font-mono:    'Share Tech Mono', monospace;
 
   /* Sidebar width */
-  --sidebar-width: 30%;
+  --sidebar-width: 40%;
 }
 
 /* ── 2. RESET & BASE ─────────────────────────────────────────────────────────── */
@@ -175,6 +175,35 @@ body {
   flex-shrink: 0;
   position: relative;
   z-index: 10;
+}
+
+/* ── Sidebar-scoped text overrides (CHANGE 2) ────────────────────────────────
+   Override color variables and font weights inside the sidebar only.
+   Keeps map popups and Leaflet controls unaffected.
+   ─────────────────────────────────────────────────────────────────────────── */
+.sidebar {
+  --text-primary:   #ffffff;
+  --text-secondary: #e4eaf8;
+  --text-muted:     #b0bcd4;
+  --text-label:     #d0d8ee;
+}
+
+/* Minimum 500 weight for body/detail text in the sidebar */
+.sidebar .card-description,
+.sidebar .card-time,
+.sidebar .coords-text,
+.sidebar .card-detail-value,
+.sidebar .user-email,
+.sidebar .comment-content,
+.sidebar .comment-time,
+.sidebar .detail-desc,
+.sidebar .auth-subtitle,
+.sidebar .gate-sub,
+.sidebar .empty-sub,
+.sidebar .form-map-tip,
+.sidebar .status-count-label,
+.sidebar .field-optional {
+  font-weight: 500;
 }
 
 /* A faint left-edge accent line */
@@ -1618,18 +1647,36 @@ body {
   white-space: nowrap;
 }
 
-/* Score ≥ 10 — uses current clearance accent color */
-.trust-badge--mid {
-  color: var(--accent);
-  border-color: var(--accent-dim);
-  background: var(--accent-dim);
+/* Score 11–50 — green */
+.trust-badge--green {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.1);
 }
 
-/* Score ≥ 50 — green "trusted" tier */
-.trust-badge--high {
-  color: var(--success);
-  border-color: rgba(34, 197, 94, 0.3);
-  background: var(--success-bg);
+/* Score 51–100 — blue */
+.trust-badge--blue {
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+/* Score 101+ — gold with glow */
+.trust-badge--gold {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.12);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.4), 0 0 18px rgba(251, 191, 36, 0.15);
+}
+
+/* Large variant used in the Profile tab */
+.trust-badge--large {
+  font-size: 30px;
+  font-weight: 800;
+  padding: 10px 20px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 /* Trust score badge in the report form header */
@@ -1900,4 +1947,312 @@ body {
 .popup-detail-btn:hover {
   background: var(--accent);
   color: #0a0b0d;
+}
+
+/* ── 21. SIDEBAR TABS ────────────────────────────────────────────────────────
+   Four-tab navigation bar below the sidebar header.
+   Active tab gets a bottom border in the current clearance-level accent color.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.sidebar-tabs {
+  display: flex;
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 2px 7px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  position: relative;
+  min-width: 0;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.sidebar-tab:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.sidebar-tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tab-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: inherit;
+  white-space: nowrap;
+}
+
+/* Glowing notification dot on the INCIDENTS tab label */
+.tab-notif-dot {
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 16px);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.9);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* Tab content wrapper — fills remaining sidebar height */
+.sidebar-tab-content {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* Incidents tab: flex column so the list area can scroll internally */
+.sidebar-tab-content--flex {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* All other tabs: simple scroll container */
+.sidebar-tab-content--scroll {
+  overflow-y: auto;
+}
+.sidebar-tab-content--scroll::-webkit-scrollbar       { width: 4px; }
+.sidebar-tab-content--scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-tab-content--scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── 22. PROFILE TAB ─────────────────────────────────────────────────────────
+   Shows the logged-in user's trust score (large), email, and stats.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.profile-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px 24px;
+  gap: 18px;
+  text-align: center;
+}
+
+/* Large trust score badge */
+.profile-score-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-score-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--text-muted);
+}
+
+.profile-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+  align-self: stretch;
+}
+
+.profile-email {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.profile-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 14px 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.profile-stat-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.profile-stat-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+
+/* Sign-out button variant in the profile tab (full-width, more prominent) */
+.btn-logout--profile {
+  width: 100%;
+  padding: 8px 16px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+/* Gate shown when not logged in */
+.profile-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  gap: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  min-height: 0;
+}
+
+.profile-gate-icon {
+  font-size: 36px;
+  opacity: 0.35;
+}
+
+.profile-gate-msg {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* ── 23. LEADERBOARD TAB ─────────────────────────────────────────────────────
+   Top 10 users ranked by trust score.
+   Top 3 rows get gold / silver / bronze styling.
+   Current user's row is highlighted with the accent color border.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.leaderboard-list {
+  padding: 10px 0 16px;
+}
+
+.leaderboard-loading,
+.leaderboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  margin: 3px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+/* Medal / rank number */
+.leaderboard-medal {
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+}
+
+.leaderboard-rank-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* Email — grows to fill remaining space */
+.leaderboard-email {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* "YOU" tag on the current user's row */
+.leaderboard-you-tag {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+
+/* 🥇 Gold — 1st place */
+.leaderboard-row--rank-1 {
+  background: rgba(251, 191, 36, 0.07);
+  border-color: rgba(251, 191, 36, 0.25);
+}
+.leaderboard-row--rank-1 .leaderboard-email { color: #fbbf24; font-weight: 700; }
+
+/* 🥈 Silver — 2nd place */
+.leaderboard-row--rank-2 {
+  background: rgba(192, 207, 228, 0.07);
+  border-color: rgba(192, 207, 228, 0.2);
+}
+.leaderboard-row--rank-2 .leaderboard-email { color: #c8d8ec; font-weight: 700; }
+
+/* 🥉 Bronze — 3rd place */
+.leaderboard-row--rank-3 {
+  background: rgba(180, 103, 40, 0.07);
+  border-color: rgba(180, 103, 40, 0.2);
+}
+.leaderboard-row--rank-3 .leaderboard-email { color: #cd7f32; font-weight: 700; }
+
+/* Current user's row — accent left border regardless of rank */
+.leaderboard-row--me {
+  border-left: 2px solid var(--accent);
 }

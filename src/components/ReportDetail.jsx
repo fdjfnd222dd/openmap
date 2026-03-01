@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
+import { trustClass } from '../utils/trust'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ReportDetail — expanded view of a single report, shown in the sidebar
@@ -137,7 +138,10 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
             </span>
           )}
           {submitterProfile != null && (
-            <span className="trust-badge" title="Reporter trust score">
+            <span
+              className={`trust-badge ${trustClass(submitterProfile.trust_score)}`}
+              title="Reporter trust score"
+            >
               ◈ {submitterProfile.trust_score}
             </span>
           )}
