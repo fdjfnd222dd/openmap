@@ -2,8 +2,6 @@
 
 A real-time disaster and local incident reporting platform built with React, Leaflet, and Supabase.
 
-![Project Hilo](https://img.shields.io/badge/status-active-brightgreen) ![React](https://img.shields.io/badge/React-18-blue) ![Vite](https://img.shields.io/badge/Vite-5-purple) ![Supabase](https://img.shields.io/badge/Supabase-enabled-green)
-
 ---
 
 ## Features
@@ -70,97 +68,7 @@ cd openmap
 npm install
 ```
 
-### 2. Set up Supabase
-
-Create a free project at [supabase.com](https://supabase.com), then open `src/supabaseClient.js` and replace the placeholder credentials:
-
-```js
-const SUPABASE_URL = 'https://your-project.supabase.co'
-const SUPABASE_ANON_KEY = 'your-anon-key'
-```
-
-### 3. Run the database migrations
-
-In the Supabase **SQL Editor**, run the following:
-
-```sql
--- Reports table
-CREATE TABLE reports (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  created_at timestamptz DEFAULT now(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  title text NOT NULL,
-  description text,
-  type text NOT NULL,
-  latitude double precision NOT NULL,
-  longitude double precision NOT NULL,
-  status text
-);
-ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "reports_select" ON reports FOR SELECT USING (true);
-CREATE POLICY "reports_insert" ON reports FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "reports_update" ON reports FOR UPDATE USING (auth.role() = 'authenticated');
-
--- Profiles table
-CREATE TABLE profiles (
-  id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email text,
-  trust_score integer DEFAULT 0,
-  reports_submitted integer DEFAULT 0,
-  reports_verified integer DEFAULT 0,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);
-CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (auth.role() = 'authenticated');
-
--- Comments table
-CREATE TABLE comments (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  created_at timestamptz DEFAULT now(),
-  report_id bigint REFERENCES reports(id) ON DELETE CASCADE,
-  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  content text NOT NULL
-);
-ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "comments_select" ON comments FOR SELECT USING (true);
-CREATE POLICY "comments_insert" ON comments FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Sitreps table (for graph view)
-CREATE TABLE sitreps (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  created_at timestamptz DEFAULT now(),
-  title text NOT NULL,
-  content text,
-  status text DEFAULT 'draft',
-  report_id bigint REFERENCES reports(id) ON DELETE SET NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL
-);
-ALTER TABLE sitreps ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "sitreps_select" ON sitreps FOR SELECT USING (true);
-CREATE POLICY "sitreps_insert" ON sitreps FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "sitreps_update" ON sitreps FOR UPDATE USING (auth.role() = 'authenticated');
-
--- Relationships table (for graph view)
-CREATE TABLE relationships (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  created_at timestamptz DEFAULT now(),
-  source_type text NOT NULL,
-  source_id text NOT NULL,
-  target_type text NOT NULL,
-  target_id text NOT NULL,
-  label text NOT NULL,
-  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
-);
-ALTER TABLE relationships ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "relationships_select" ON relationships FOR SELECT USING (true);
-CREATE POLICY "relationships_insert" ON relationships FOR INSERT WITH CHECK (auth.uid() = created_by);
-```
-
-Also enable **Realtime** on the `reports` table: Supabase Dashboard → Database → Replication → toggle `reports`.
-
-### 4. Start the dev server
+### 2. Start the dev server
 
 ```bash
 npm run dev
