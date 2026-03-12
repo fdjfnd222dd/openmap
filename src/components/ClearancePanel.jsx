@@ -18,11 +18,11 @@ import { useState } from 'react'
 // in frontend code for a production system. For this personal tool, hardcoded
 // passwords are fine.
 const LEVELS = {
-  1: { name: 'PUBLIC',      color: '#94a3b8', password: null           },
-  2: { name: 'VOLUNTEER',   color: '#22c55e', password: 'volunteer2'   },
-  3: { name: 'COORDINATOR', color: '#eab308', password: 'coordinator3' },
-  4: { name: 'RESPONDER',   color: '#f97316', password: 'responder4'   },
-  5: { name: 'COMMAND',     color: '#ef4444', password: 'command5'     },
+  1: { name: 'PUBLIC',      color: '#64748b', password: null           },
+  2: { name: 'VOLUNTEER',   color: '#22d3ee', password: 'volunteer2'   },
+  3: { name: 'COORDINATOR', color: '#a3e635', password: 'coordinator3' },
+  4: { name: 'RESPONDER',   color: '#fb923c', password: 'responder4'   },
+  5: { name: 'COMMAND',     color: '#f43f5e', password: 'command5'     },
 }
 
 function ClearancePanel({ clearanceLevel, onLevelChange }) {

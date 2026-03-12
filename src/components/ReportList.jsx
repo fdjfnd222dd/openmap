@@ -1,13 +1,9 @@
 import ReportCard from './ReportCard'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ReportList — renders the scrollable list of incident reports
-//
-// Now passes `clearanceLevel` and `onUpdateReport` down to each ReportCard
-// so cards can show level-gated content.
-// ─────────────────────────────────────────────────────────────────────────────
-
-function ReportList({ reports, loading, clearanceLevel, onUpdateReport, onSelectReport, profiles, onProfileRefresh }) {
+function ReportList({
+  reports, loading, clearanceLevel, session,
+  onUpdateReport, onSelectReport, profiles, onProfileRefresh,
+}) {
 
   if (loading) {
     return (
@@ -40,6 +36,7 @@ function ReportList({ reports, loading, clearanceLevel, onUpdateReport, onSelect
         <ReportCard
           key={report.id}
           report={report}
+          session={session}
           clearanceLevel={clearanceLevel}
           onUpdateReport={onUpdateReport}
           onSelectReport={onSelectReport}

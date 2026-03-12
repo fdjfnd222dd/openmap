@@ -1,16 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// FilterBar — compact toggle filters above the report list
-//
-// Two rows of toggle buttons:
-//   Row 1 — filter by incident type (flood / fire / earthquake / other)
-//   Row 2 — filter by status (unverified / verified / false)
-//
-// Active buttons highlight with the current clearance-level accent color
-// (via var(--accent) in CSS), so they automatically change as the level does.
-//
-// When no buttons in a row are active, that row is unfiltered (show all).
-// ─────────────────────────────────────────────────────────────────────────────
-
 const TYPE_FILTERS = [
   { value: 'flood',      emoji: '🌊', label: 'FLOOD',  mod: 'flood'      },
   { value: 'fire',       emoji: '🔥', label: 'FIRE',   mod: 'fire'       },
@@ -19,9 +6,10 @@ const TYPE_FILTERS = [
 ]
 
 const STATUS_FILTERS = [
-  { value: 'unverified', label: 'UNVERIFIED' },
-  { value: 'verified',   label: 'VERIFIED'   },
-  { value: 'false',      label: 'FALSE'      },
+  { value: 'unverified',   label: 'UNVERIFIED'   },
+  { value: 'under_review', label: 'IN REVIEW'    },
+  { value: 'verified',     label: 'VERIFIED'     },
+  { value: 'false',        label: 'FALSE'        },
 ]
 
 function FilterBar({ activeTypes, activeStatuses, onToggleType, onToggleStatus, onClearAll }) {
@@ -30,7 +18,6 @@ function FilterBar({ activeTypes, activeStatuses, onToggleType, onToggleStatus, 
   return (
     <div className="filter-bar">
 
-      {/* ── Type filters ── */}
       <div className="filter-row">
         <span className="filter-row-label">TYPE</span>
         <div className="filter-btns">
@@ -39,8 +26,6 @@ function FilterBar({ activeTypes, activeStatuses, onToggleType, onToggleStatus, 
             return (
               <button
                 key={f.value}
-                // When active, the button uses the accent color.
-                // When inactive, it falls back to the muted type color.
                 className={`filter-btn filter-btn--type ${isActive ? 'filter-btn--active' : `filter-btn--${f.mod}`}`}
                 onClick={() => onToggleType(f.value)}
                 title={`Filter by ${f.label}`}
@@ -53,7 +38,6 @@ function FilterBar({ activeTypes, activeStatuses, onToggleType, onToggleStatus, 
         </div>
       </div>
 
-      {/* ── Status filters ── */}
       <div className="filter-row">
         <span className="filter-row-label">STATUS</span>
         <div className="filter-btns">
@@ -73,7 +57,6 @@ function FilterBar({ activeTypes, activeStatuses, onToggleType, onToggleStatus, 
         </div>
       </div>
 
-      {/* Clear all button — only shown when at least one filter is active */}
       {hasActiveFilters && (
         <button className="filter-clear-btn" onClick={onClearAll}>
           × CLEAR ALL FILTERS

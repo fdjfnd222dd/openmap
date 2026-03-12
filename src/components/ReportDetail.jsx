@@ -2,16 +2,6 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { trustClass } from '../utils/trust'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ReportDetail — expanded view of a single report, shown in the sidebar
-//
-// Displays full report info (type, title, description, coords, level-gated
-// details) plus a real-time comment thread at the bottom.
-//
-// Level 2+ logged-in users can post new comments.
-// Real-time subscription keeps the list live without a page refresh.
-// ─────────────────────────────────────────────────────────────────────────────
-
 const INCIDENT_META = {
   flood:      { label: 'FLOOD',      mod: 'flood'      },
   fire:       { label: 'FIRE',       mod: 'fire'       },
@@ -22,8 +12,7 @@ const INCIDENT_META = {
 function formatShort(iso) {
   if (!iso) return ''
   return new Date(iso).toLocaleString('en-US', {
-    month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit', hour12: false,
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
   })
 }
 
@@ -36,24 +25,32 @@ function shortId(uuid) {
   return uuid ? uuid.split('-')[0].toUpperCase() : '—'
 }
 
-function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
+const STATUS_BADGE = {
+  verified:     { label: '✓ VERIFIED',     cls: 'verdict--verified'     },
+  under_review: { label: '⏳ UNDER REVIEW', cls: 'verdict--under-review' },
+  false:        { label: '✗ FALSE REPORT',  cls: 'verdict--false'        },
+}
+
+function ReportDetail({ report, session, clearanceLevel, onClose, profiles, onUpdateReport, onOpenComms }) {
   const [comments, setComments]             = useState([])
   const [commentsLoading, setCommentsLoading] = useState(true)
   const [newComment, setNewComment]         = useState('')
   const [submitting, setSubmitting]         = useState(false)
+  const [history, setHistory]               = useState([])
+  const [working, setWorking]               = useState(false)
 
   const meta             = INCIDENT_META[report.type] || INCIDENT_META.other
   const submitterProfile = report.user_id ? profiles?.[report.user_id] : null
   const canComment       = session && clearanceLevel >= 2
+  const statusBadge      = STATUS_BADGE[report.status]
 
-  // ── Load comments + subscribe to new ones ─────────────────────────────────
+  // ── Comments ──────────────────────────────────────────────────────────────
   useEffect(() => {
     let channel
 
     async function init() {
       setCommentsLoading(true)
 
-      // report.id is bigint — coerce to Number so the eq filter matches correctly
       const { data } = await supabase
         .from('comments')
         .select('*')
@@ -63,41 +60,73 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
       setComments(data || [])
       setCommentsLoading(false)
 
-      // Subscribe to inserts on this report only (filtered subscription)
       channel = supabase
         .channel(`comments-${report.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event:  'INSERT',
-            schema: 'public',
-            table:  'comments',
-            filter: `report_id=eq.${Number(report.id)}`,
-          },
-          (payload) => {
-            setComments((prev) => {
-              // Deduplicate — the optimistic insert fires before the subscription
-              if (prev.some((c) => c.id === payload.new.id)) return prev
-              return [...prev, payload.new]
-            })
-          }
-        )
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'comments',
+          filter: `report_id=eq.${Number(report.id)}`,
+        }, (payload) => {
+          setComments(prev =>
+            prev.some(c => c.id === payload.new.id) ? prev : [...prev, payload.new]
+          )
+        })
         .subscribe()
     }
 
     init()
-
     return () => { if (channel) supabase.removeChannel(channel) }
   }, [report.id])
 
-  // ── Submit a new comment ───────────────────────────────────────────────────
+  // ── Verification history (Level 3+) ────────────────────────────────────────
+  useEffect(() => {
+    if (clearanceLevel < 3) return
+    supabase
+      .from('verification_history')
+      .select('*')
+      .eq('report_id', Number(report.id))
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setHistory(data || []))
+  }, [report.id, clearanceLevel])
+
+  async function applyStatus(newStatus) {
+    if (working || !session) return
+    setWorking(true)
+
+    const oldStatus = report.status || 'unverified'
+
+    const { error } = await supabase
+      .from('reports')
+      .update({ status: newStatus })
+      .eq('id', report.id)
+
+    if (error) { console.error(error.message); setWorking(false); return }
+
+    await supabase.from('verification_history').insert({
+      report_id:  Number(report.id),
+      user_id:    session.user.id,
+      user_email: session.user.email,
+      old_status: oldStatus,
+      new_status: newStatus,
+    })
+
+    // Refresh history
+    const { data: newHistory } = await supabase
+      .from('verification_history')
+      .select('*')
+      .eq('report_id', Number(report.id))
+      .order('created_at', { ascending: false })
+    setHistory(newHistory || [])
+
+    if (onUpdateReport) onUpdateReport(report.id, newStatus)
+    setWorking(false)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     const trimmed = newComment.trim()
     if (!trimmed || submitting) return
 
     setSubmitting(true)
-
     const { data: inserted, error } = await supabase
       .from('comments')
       .insert({ report_id: Number(report.id), user_id: session.user.id, content: trimmed })
@@ -105,43 +134,29 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
       .single()
 
     setSubmitting(false)
-
     if (!error) {
-      // Optimistically add the comment before the subscription fires
-      setComments((prev) => {
-        if (prev.some((c) => c.id === inserted.id)) return prev
-        return [...prev, inserted]
-      })
+      setComments(prev => prev.some(c => c.id === inserted.id) ? prev : [...prev, inserted])
       setNewComment('')
-    } else {
-      console.error('Comment error:', error.message)
     }
   }
 
   return (
     <div className="report-detail">
 
-      {/* ── Back button ── */}
       <button className="detail-back-btn" onClick={onClose}>
         ‹ BACK TO LIST
       </button>
 
-      {/* ── Scrollable body: report info + comments ── */}
       <div className="detail-body">
 
-        {/* Type badge + verdict + trust score */}
+        {/* Type + status + trust */}
         <div className="detail-meta">
           <span className={`badge badge--${meta.mod}`}>{meta.label}</span>
-          {report.status && (
-            <span className={`card-verdict card-verdict--${report.status}`}>
-              {report.status === 'verified' ? '✓ VERIFIED' : '✗ FALSE REPORT'}
-            </span>
+          {statusBadge && (
+            <span className={`card-verdict ${statusBadge.cls}`}>{statusBadge.label}</span>
           )}
           {submitterProfile != null && (
-            <span
-              className={`trust-badge ${trustClass(submitterProfile.trust_score)}`}
-              title="Reporter trust score"
-            >
+            <span className={`trust-badge ${trustClass(submitterProfile.trust_score)}`} title="Reporter trust score">
               ◈ {submitterProfile.trust_score}
             </span>
           )}
@@ -150,15 +165,10 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
           </time>
         </div>
 
-        {/* Title */}
         <h2 className="detail-title">{report.title}</h2>
 
-        {/* Description */}
-        {report.description && (
-          <p className="detail-desc">{report.description}</p>
-        )}
+        {report.description && <p className="detail-desc">{report.description}</p>}
 
-        {/* Coordinates */}
         <div className="detail-coords">
           <span className="coords-icon">⊕</span>
           <span className="coords-text">
@@ -167,31 +177,88 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
           </span>
         </div>
 
-        {/* Level 3+ extended details */}
+        {/* Level 3+: extended + verification actions */}
         {clearanceLevel >= 3 && (
-          <div className="card-details">
-            <div className="card-detail-row">
-              <span className="card-detail-label">REPORTER</span>
-              <span className="card-detail-value">{shortId(report.user_id)}</span>
+          <>
+            <div className="card-details">
+              <div className="card-detail-row">
+                <span className="card-detail-label">REPORTER</span>
+                <span className="card-detail-value">{shortId(report.user_id)}</span>
+              </div>
+              <div className="card-detail-row">
+                <span className="card-detail-label">TIMESTAMP</span>
+                <span className="card-detail-value">{formatFull(report.created_at)}</span>
+              </div>
+              <div className="card-detail-row">
+                <span className="card-detail-label">REPORT ID</span>
+                <span className="card-detail-value">#{report.id}</span>
+              </div>
             </div>
-            <div className="card-detail-row">
-              <span className="card-detail-label">TIMESTAMP</span>
-              <span className="card-detail-value">{formatFull(report.created_at)}</span>
+
+            {/* Verification action buttons */}
+            <div className="detail-verdict-actions">
+              {clearanceLevel >= 3 && (
+                <button
+                  className="btn-verdict btn-verdict--review"
+                  onClick={() => applyStatus('under_review')}
+                  disabled={working || report.status === 'under_review'}
+                >
+                  ⏳ UNDER REVIEW
+                </button>
+              )}
+              {clearanceLevel >= 5 && (
+                <>
+                  <button
+                    className="btn-verdict btn-verdict--verified"
+                    onClick={() => applyStatus('verified')}
+                    disabled={working || report.status === 'verified'}
+                  >
+                    ✓ VERIFIED
+                  </button>
+                  <button
+                    className="btn-verdict btn-verdict--false"
+                    onClick={() => applyStatus('false')}
+                    disabled={working || report.status === 'false'}
+                  >
+                    ✗ FALSE
+                  </button>
+                </>
+              )}
+              {onOpenComms && clearanceLevel >= 2 && (
+                <button
+                  className="btn-verdict btn-verdict--comms"
+                  onClick={() => onOpenComms(report)}
+                >
+                  📡 OPEN COMMS
+                </button>
+              )}
             </div>
-            <div className="card-detail-row">
-              <span className="card-detail-label">REPORT ID</span>
-              <span className="card-detail-value">#{report.id}</span>
-            </div>
-          </div>
+
+            {/* Verification history */}
+            {history.length > 0 && (
+              <div className="verif-history">
+                <div className="verif-history-label">VERIFICATION HISTORY</div>
+                {history.map(h => (
+                  <div key={h.id} className="verif-history-row">
+                    <span className="verif-history-who">
+                      {h.user_email ? h.user_email.split('@')[0] : '?'}
+                    </span>
+                    <span className="verif-history-arrow">
+                      {h.old_status || 'unverified'} → {h.new_status}
+                    </span>
+                    <span className="verif-history-when">{formatShort(h.created_at)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
-        {/* ── Comments ── */}
+        {/* Comments */}
         <div className="comments-section">
           <div className="comments-header">
             COMMENTS
-            {!commentsLoading && (
-              <span className="comments-count"> ({comments.length})</span>
-            )}
+            {!commentsLoading && <span className="comments-count"> ({comments.length})</span>}
           </div>
 
           {commentsLoading ? (
@@ -200,17 +267,13 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
             <div className="comment-empty">No comments yet.</div>
           ) : (
             <div className="comment-list">
-              {comments.map((comment) => (
+              {comments.map(comment => (
                 <div key={comment.id} className="comment-item">
                   <div className="comment-meta">
                     <span className="comment-author">
-                      {session && comment.user_id === session.user.id
-                        ? 'YOU'
-                        : shortId(comment.user_id)}
+                      {session && comment.user_id === session.user.id ? 'YOU' : shortId(comment.user_id)}
                     </span>
-                    <span className="comment-time">
-                      {formatShort(comment.created_at)}
-                    </span>
+                    <span className="comment-time">{formatShort(comment.created_at)}</span>
                   </div>
                   <p className="comment-content">{comment.content}</p>
                 </div>
@@ -219,16 +282,16 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
           )}
         </div>
 
-      </div>{/* end detail-body */}
+      </div>
 
-      {/* ── Fixed footer: comment input ── */}
+      {/* Comment input footer */}
       <div className="detail-footer">
         {canComment ? (
           <form className="comment-form" onSubmit={handleSubmit}>
             <input
               className="comment-input"
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              onChange={e => setNewComment(e.target.value)}
               placeholder="Add a comment…"
               disabled={submitting}
               maxLength={500}
@@ -242,13 +305,9 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles }) {
             </button>
           </form>
         ) : session ? (
-          <div className="comment-gate">
-            LEVEL 2 CLEARANCE REQUIRED TO COMMENT
-          </div>
+          <div className="comment-gate">LEVEL 2 CLEARANCE REQUIRED TO COMMENT</div>
         ) : (
-          <div className="comment-gate">
-            SIGN IN TO COMMENT
-          </div>
+          <div className="comment-gate">SIGN IN TO COMMENT</div>
         )}
       </div>
 
