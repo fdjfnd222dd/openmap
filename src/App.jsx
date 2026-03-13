@@ -254,20 +254,42 @@ function App() {
   if (!session && !IS_PUBLIC_VIEW) return (
     <div className="login-screen">
       <div className="login-screen-grid" />
+      <div className="login-screen-scanlines" />
+      <div className="login-classification-bar login-classification-bar--top">
+        UNCLASSIFIED // FOR OFFICIAL USE ONLY // CUI
+      </div>
+
       <div className="login-screen-inner">
         <div className="login-brand">
-          <span className="login-brand-mark">⬡</span>
+          <div className="login-brand-emblem">
+            <span className="login-brand-hex">⬡</span>
+            <span className="login-brand-crosshair" />
+          </div>
           <div className="login-brand-text">
             <span className="login-brand-name">PROJECT HILO</span>
             <span className="login-brand-sub">321st CA · Civil Affairs Platform</span>
+            <span className="login-brand-unit">321st CA BN · Big Island · Hawaii</span>
           </div>
         </div>
-        <div className="login-card">
-          <AuthPanel />
+
+        <div className="login-card-wrap">
+          <span className="login-corner login-corner--tl" />
+          <span className="login-corner login-corner--tr" />
+          <span className="login-corner login-corner--bl" />
+          <span className="login-corner login-corner--br" />
+          <div className="login-card">
+            <AuthPanel />
+          </div>
         </div>
+
         <div className="login-footer">
-          <span className="login-footer-text">321st CA BN · Big Island Civil Affairs Platform</span>
+          <span className="login-status-dot" />
+          <span className="login-footer-text">SYSTEM ONLINE · ENCRYPTED CHANNEL · {new Date().toISOString().slice(0,10)}</span>
         </div>
+      </div>
+
+      <div className="login-classification-bar login-classification-bar--bottom">
+        UNCLASSIFIED // FOR OFFICIAL USE ONLY // CUI
       </div>
     </div>
   )
