@@ -5148,7 +5148,7 @@ body {
 
 /* ── LOGIN SCREEN ─────────────────────────────────────────────────────────────── */
 
-/* ── LOGIN SCREEN — Red/Black Military ────────────────────────────────────── */
+/* ── LOGIN SCREEN ───────────────────────────────────────────────────────────── */
 
 .login-screen {
   position: fixed;
@@ -5156,46 +5156,46 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #110000;
+  background: #0d0d0d;
   overflow: hidden;
 }
 
-/* tactical grid */
+/* ultra-subtle grid — just barely visible */
 .login-screen-grid {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(220, 20, 20, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(220, 20, 20, 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
   pointer-events: none;
 }
 
-/* scanlines */
+/* scanlines — barely there */
 .login-screen-scanlines {
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
     0deg,
     transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.18) 2px,
-    rgba(0, 0, 0, 0.18) 4px
+    transparent 3px,
+    rgba(0, 0, 0, 0.06) 3px,
+    rgba(0, 0, 0, 0.06) 4px
   );
   pointer-events: none;
   z-index: 0;
 }
 
-/* red radial glow behind card */
+/* subtle red glow behind card */
 .login-screen::before {
   content: '';
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 700px;
-  height: 700px;
-  background: radial-gradient(ellipse, rgba(200, 10, 10, 0.12) 0%, transparent 65%);
+  width: 600px;
+  height: 500px;
+  background: radial-gradient(ellipse, rgba(230, 48, 48, 0.07) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -5204,170 +5204,169 @@ body {
   position: absolute;
   left: 0;
   right: 0;
-  height: 22px;
-  background: #1e0000;
-  border-color: #5a0000;
+  height: 24px;
+  background: #111;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 0.2em;
-  color: #ff4444;
+  letter-spacing: 0.22em;
+  color: #e63030;
   z-index: 10;
 }
-.login-classification-bar--top    { top: 0;    border-bottom: 1px solid #5a0000; }
-.login-classification-bar--bottom { bottom: 0; border-top:    1px solid #5a0000; }
+.login-classification-bar--top    { top: 0;    border-bottom: 1px solid #2a2a2a; }
+.login-classification-bar--bottom { bottom: 0; border-top:    1px solid #2a2a2a; }
 
+/* center column */
 .login-screen-inner {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: 28px;
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
   padding: 24px 16px;
 }
 
-/* brand / logo */
+/* ── Brand ── */
 .login-brand {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
 }
 
 .login-brand-emblem {
-  position: relative;
-  width: 52px;
-  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .login-brand-hex {
-  font-size: 48px;
-  color: #cc0000;
+  font-size: 44px;
+  color: #e63030;
   line-height: 1;
-  filter: drop-shadow(0 0 14px rgba(200, 0, 0, 0.8)) drop-shadow(0 0 30px rgba(200, 0, 0, 0.4));
+  filter: drop-shadow(0 0 10px rgba(230, 48, 48, 0.7));
   animation: login-hex-pulse 3s ease-in-out infinite;
 }
 
 @keyframes login-hex-pulse {
-  0%, 100% { filter: drop-shadow(0 0 14px rgba(200, 0, 0, 0.8)) drop-shadow(0 0 30px rgba(200, 0, 0, 0.4)); }
-  50%       { filter: drop-shadow(0 0 20px rgba(220, 0, 0, 1.0)) drop-shadow(0 0 50px rgba(200, 0, 0, 0.6)); }
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(230, 48, 48, 0.7)); }
+  50%       { filter: drop-shadow(0 0 20px rgba(230, 48, 48, 1.0)) drop-shadow(0 0 40px rgba(230, 48, 48, 0.4)); }
 }
 
 .login-brand-text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .login-brand-name {
   font-family: var(--font-display);
-  font-size: 30px;
+  font-size: 28px;
   font-weight: 700;
   letter-spacing: 0.2em;
-  color: #fff;
+  color: #ffffff;
   line-height: 1;
-  text-shadow: 0 0 20px rgba(200, 0, 0, 0.5);
 }
 
 .login-brand-sub {
   font-family: var(--font-mono);
   font-size: 11px;
-  letter-spacing: 0.14em;
-  color: #ff6655;
+  letter-spacing: 0.1em;
+  color: #888;
 }
 
 .login-brand-unit {
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 0.12em;
-  color: #aa4433;
+  letter-spacing: 0.1em;
+  color: #555;
 }
 
-/* card with corner brackets */
+/* ── Card ── */
 .login-card-wrap {
   position: relative;
   width: 100%;
 }
 
+/* corner brackets */
 .login-corner {
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   z-index: 2;
 }
-.login-corner--tl { top: -2px;    left: -2px;   border-top: 2px solid #cc0000;  border-left:  2px solid #cc0000; }
-.login-corner--tr { top: -2px;    right: -2px;  border-top: 2px solid #cc0000;  border-right: 2px solid #cc0000; }
-.login-corner--bl { bottom: -2px; left: -2px;   border-bottom: 2px solid #cc0000; border-left:  2px solid #cc0000; }
-.login-corner--br { bottom: -2px; right: -2px;  border-bottom: 2px solid #cc0000; border-right: 2px solid #cc0000; }
+.login-corner--tl { top: -3px;    left: -3px;   border-top: 2px solid #e63030; border-left:  2px solid #e63030; }
+.login-corner--tr { top: -3px;    right: -3px;  border-top: 2px solid #e63030; border-right: 2px solid #e63030; }
+.login-corner--bl { bottom: -3px; left: -3px;   border-bottom: 2px solid #e63030; border-left:  2px solid #e63030; }
+.login-corner--br { bottom: -3px; right: -3px;  border-bottom: 2px solid #e63030; border-right: 2px solid #e63030; }
 
 .login-card {
   width: 100%;
-  background: #1a0505;
-  border: 1px solid #3d0000;
-  border-top: 2px solid #cc0000;
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-top: 2px solid #e63030;
   border-radius: 2px;
   box-shadow:
-    0 0 0 1px rgba(180, 0, 0, 0.1),
-    0 0 40px rgba(150, 0, 0, 0.25),
-    0 24px 60px rgba(0, 0, 0, 0.7);
+    0 0 0 1px rgba(230, 48, 48, 0.06),
+    0 20px 60px rgba(0, 0, 0, 0.6);
 }
 
-/* override field inputs inside login card to use red theme */
+/* ── Form overrides inside login card ── */
 .login-card .field-input {
-  background: #220808;
-  border-color: #4a1010;
-  color: #ffe0e0;
+  background: #1e1e1e;
+  border-color: #333;
+  color: #f0f0f0;
 }
 .login-card .field-input:focus {
-  border-color: #cc0000;
-  background: #2a0a0a;
-  box-shadow: 0 0 0 2px rgba(180, 0, 0, 0.3);
+  border-color: #e63030;
+  background: #222;
+  box-shadow: 0 0 0 2px rgba(230, 48, 48, 0.2);
+  outline: none;
 }
 .login-card .field-input::placeholder {
-  color: #6b3333;
+  color: #555;
 }
 .login-card .field-label {
-  color: #cc6666;
+  color: #888;
 }
 .login-card .btn-submit {
-  background: linear-gradient(135deg, #8b0000 0%, #cc0000 50%, #8b0000 100%);
-  border-color: #cc0000;
+  background: #e63030;
+  border-color: #e63030;
   color: #fff;
-  letter-spacing: 0.18em;
-  box-shadow: 0 0 20px rgba(180, 0, 0, 0.4);
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  box-shadow: 0 4px 20px rgba(230, 48, 48, 0.35);
+  transition: background 0.15s, box-shadow 0.15s;
 }
 .login-card .btn-submit:hover:not(:disabled) {
-  background: linear-gradient(135deg, #a00000 0%, #e60000 50%, #a00000 100%);
-  box-shadow: 0 0 30px rgba(200, 0, 0, 0.6);
+  background: #ff3a3a;
+  box-shadow: 0 4px 28px rgba(230, 48, 48, 0.55);
 }
 .login-card .auth-header .auth-lock {
-  color: #cc0000;
-  filter: drop-shadow(0 0 8px rgba(200, 0, 0, 0.8));
+  color: #e63030;
+  filter: drop-shadow(0 0 6px rgba(230, 48, 48, 0.7));
 }
 .login-card .auth-title {
-  color: #ff6666;
+  color: #f0f0f0;
 }
 .login-card .auth-subtitle {
-  color: #cc7777;
+  color: #777;
 }
 .login-card .auth-toggle {
-  color: #996666;
+  color: #555;
 }
 .login-card .auth-toggle-btn {
-  color: #ff4444;
+  color: #e63030;
 }
 .login-card .auth-toggle-btn:hover {
-  color: #ff6666;
+  color: #ff5555;
 }
 
-/* footer status line */
+/* ── Footer ── */
 .login-footer {
   display: flex;
   align-items: center;
@@ -5378,21 +5377,21 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #cc0000;
-  box-shadow: 0 0 6px #cc0000;
+  background: #e63030;
+  box-shadow: 0 0 6px #e63030;
   animation: login-dot-blink 1.4s ease-in-out infinite;
   flex-shrink: 0;
 }
 
 @keyframes login-dot-blink {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.2; }
+  50%       { opacity: 0.15; }
 }
 
 .login-footer-text {
   font-family: var(--font-mono);
   font-size: 9px;
-  letter-spacing: 0.16em;
-  color: #884444;
+  letter-spacing: 0.14em;
+  color: #444;
 }
 
