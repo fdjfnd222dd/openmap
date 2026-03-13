@@ -319,7 +319,7 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles, onUp
             </button>
           </form>
         ) : session ? (
-          <div className="comment-gate">LEVEL 2 CLEARANCE REQUIRED TO COMMENT</div>
+          <div className="comment-gate">VOLUNTEER ACCESS REQUIRED TO COMMENT</div>
         ) : (
           <div className="comment-gate">SIGN IN TO COMMENT</div>
         )}

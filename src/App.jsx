@@ -264,7 +264,7 @@ function App() {
           <AuthPanel />
         </div>
         <div className="login-footer">
-          <span className="login-footer-text">RESTRICTED SYSTEM · AUTHORIZED USERS ONLY</span>
+          <span className="login-footer-text">321st CA BN · Big Island Civil Affairs Platform</span>
         </div>
       </div>
     </div>

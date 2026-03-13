@@ -223,7 +223,7 @@ function KLEPanel({ session, clearanceLevel }) {
         <div className="kle-gate">Sign in to log Key Leader Engagements.</div>
       )}
       {!canCreate && session && (
-        <div className="kle-gate">VOLUNTEER clearance (L2) required to log KLEs.</div>
+        <div className="kle-gate">Volunteer access (L2) required to log KLEs.</div>
       )}
 
       {/* Stats strip */}

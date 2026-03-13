@@ -162,10 +162,10 @@ function SitrepPanel({ session, reports = [], clearanceLevel }) {
       )}
 
       {!canCreate && !session && (
-        <div className="sp-gate">Sign in with COORDINATOR clearance to file SITREPs.</div>
+        <div className="sp-gate">Sign in as a Coordinator to file SITREPs.</div>
       )}
       {!canCreate && session && clearanceLevel < 3 && (
-        <div className="sp-gate">COORDINATOR clearance (L3) required to file SITREPs.</div>
+        <div className="sp-gate">Coordinator access (L3) required to file SITREPs.</div>
       )}
 
       {/* List */}

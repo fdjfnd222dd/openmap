@@ -1406,6 +1406,8 @@ body {
 
 .clearance-rung.rung--unlocked { opacity: 0.65; }
 .clearance-rung.rung--active   { opacity: 1; background: rgba(255,255,255,0.04); }
+.clearance-rung--btn { width: 100%; background: none; border: none; cursor: pointer; text-align: left; border-radius: 4px; padding: 4px 6px; color: inherit; font: inherit; }
+.clearance-rung--btn:hover { background: rgba(255,255,255,0.07); }
 
 .rung-dot {
   width: 8px;
@@ -4872,6 +4874,40 @@ body {
   white-space: nowrap;
 }
 .brief-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.export-wrap { position: relative; }
+.export-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  min-width: 180px;
+  z-index: 50;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.export-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+}
+.export-menu-item:last-child { border-bottom: none; }
+.export-menu-item:hover { background: rgba(255,255,255,0.05); color: var(--accent); }
+.export-hint { font-weight: 400; font-size: 9px; color: var(--text-muted); letter-spacing: 0; }
 
 /* ── REPORT TEMPLATE section ─────────────────────────────────────────────── */
 .template-section {

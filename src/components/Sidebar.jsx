@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import ReportList from './ReportList'
 import ReportForm from './ReportForm'
 import ReportDetail from './ReportDetail'
@@ -13,6 +13,69 @@ import { supabase } from '../supabaseClient'
 import { trustClass } from '../utils/trust'
 
 const MEDALS = ['🥇', '🥈', '🥉']
+
+// ── Export helpers ──────────────────────────────────────────────────────────
+function downloadFile(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
+function escapeXml(str) {
+  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function toGeoJSON(reports) {
+  return JSON.stringify({
+    type: 'FeatureCollection',
+    features: reports.map(r => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [parseFloat(r.longitude), parseFloat(r.latitude)] },
+      properties: {
+        id: r.id, title: r.title, description: r.description || '',
+        type: r.type, status: r.status || 'unverified', created_at: r.created_at,
+      },
+    })),
+  }, null, 2)
+}
+
+function toKML(reports) {
+  const dtg = new Date().toISOString().slice(0, 16).replace('T', ' ') + 'Z'
+  const placemarks = reports.map(r => `  <Placemark>
+    <name>${escapeXml(r.title)}</name>
+    <description>Type: ${r.type} | Status: ${r.status || 'unverified'}&#10;${escapeXml(r.description || '')}</description>
+    <styleUrl>#${r.type || 'other'}</styleUrl>
+    <Point><coordinates>${parseFloat(r.longitude)},${parseFloat(r.latitude)},0</coordinates></Point>
+  </Placemark>`).join('\n')
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>HILO Incidents — ${dtg}</name>
+  <Style id="flood"><IconStyle><color>ffff0000</color></IconStyle></Style>
+  <Style id="fire"><IconStyle><color>ff0000ff</color></IconStyle></Style>
+  <Style id="earthquake"><IconStyle><color>ff0080ff</color></IconStyle></Style>
+  <Style id="other"><IconStyle><color>ff888888</color></IconStyle></Style>
+${placemarks}
+</Document>
+</kml>`
+}
+
+function toCSV(reports) {
+  const header = 'id,title,type,status,latitude,longitude,created_at,description'
+  const rows = reports.map(r => [
+    r.id,
+    `"${(r.title || '').replace(/"/g, '""')}"`,
+    r.type,
+    r.status || 'unverified',
+    r.latitude,
+    r.longitude,
+    r.created_at,
+    `"${(r.description || '').replace(/"/g, '""')}"`,
+  ].join(','))
+  return [header, ...rows].join('\n')
+}
 
 function Sidebar({
   collapsed,
@@ -29,6 +92,15 @@ function Sidebar({
   const [leaderboardLoading, setLeaderboardLoading] = useState(false)
   const [logsSubTab, setLogsSubTab]             = useState('sitrep')
   const [briefCopied, setBriefCopied]           = useState(false)
+  const [showExportMenu, setShowExportMenu]     = useState(false)
+
+  const handleExport = useCallback((fmt) => {
+    const dtg = new Date().toISOString().slice(0, 10)
+    setShowExportMenu(false)
+    if (fmt === 'geojson') downloadFile(toGeoJSON(reports), `hilo-incidents-${dtg}.geojson`, 'application/geo+json')
+    if (fmt === 'kml')     downloadFile(toKML(reports),     `hilo-incidents-${dtg}.kml`,     'application/vnd.google-earth.kml+xml')
+    if (fmt === 'csv')     downloadFile(toCSV(reports),     `hilo-incidents-${dtg}.csv`,      'text/csv')
+  }, [reports])
 
   function copyBrief() {
     const dtg = new Date().toISOString().replace('T', ' ').slice(0, 16) + 'Z'
@@ -129,6 +201,18 @@ function Sidebar({
             <button className="brief-copy-btn" onClick={copyBrief} title="Copy incident brief to clipboard">
               {briefCopied ? '✓ COPIED' : '⎘ BRIEF'}
             </button>
+            <div className="export-wrap">
+              <button className="brief-copy-btn" onClick={() => setShowExportMenu(p => !p)} title="Export incidents">
+                ↓ EXPORT
+              </button>
+              {showExportMenu && (
+                <div className="export-menu">
+                  <button className="export-menu-item" onClick={() => handleExport('geojson')}>GeoJSON <span className="export-hint">QGIS · ArcGIS · Felt</span></button>
+                  <button className="export-menu-item" onClick={() => handleExport('kml')}>KML <span className="export-hint">Google Earth</span></button>
+                  <button className="export-menu-item" onClick={() => handleExport('csv')}>CSV <span className="export-hint">Excel · Sheets</span></button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -164,8 +248,8 @@ function Sidebar({
       return (
         <div className="clearance-gate">
           <div className="gate-icon">⬡</div>
-          <p className="gate-title">VOLUNTEER CLEARANCE REQUIRED</p>
-          <p className="gate-sub">Enter your clearance code in the top-right panel.</p>
+          <p className="gate-title">VOLUNTEER ACCESS REQUIRED</p>
+          <p className="gate-sub">Select the Volunteer role in the top-right panel.</p>
         </div>
       )
     }

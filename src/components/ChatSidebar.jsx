@@ -236,7 +236,7 @@ function ChatSidebar({ session, clearanceLevel, isOpen, onClose, initialChannelI
             </button>
           </form>
         ) : session ? (
-          <div className="chat-locked">⬡ VOLUNTEER CLEARANCE REQUIRED TO TRANSMIT</div>
+          <div className="chat-locked">⬡ VOLUNTEER ACCESS REQUIRED TO TRANSMIT</div>
         ) : (
           <div className="chat-locked">⬡ SIGN IN TO ACCESS COMMS</div>
         )}

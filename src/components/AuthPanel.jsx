@@ -83,8 +83,8 @@ function AuthPanel() {
         </div>
         <div className="auth-subtitle">
           {mode === 'login'
-            ? 'Authorized personnel only'
-            : 'Request access from your coordinator'}
+            ? 'Sign in to access the platform'
+            : 'Contact your coordinator for an invite'}
         </div>
       </div>
 
