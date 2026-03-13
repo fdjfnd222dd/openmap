@@ -241,6 +241,16 @@ const previewIcon = L.divIcon({
   className: '', iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -18],
 })
 
+// ── Map resizer — calls invalidateSize when sidebar collapses/expands ──────────
+function MapResizer({ trigger }) {
+  const map = useMap()
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 200)
+    return () => clearTimeout(t)
+  }, [trigger, map])
+  return null
+}
+
 // ── Fly controller ─────────────────────────────────────────────────────────────
 function FlyController({ flyTarget }) {
   const map = useMap()
@@ -299,9 +309,9 @@ const TILE_LAYERS = {
 
 const NWS_COLOR = { Extreme: '#f43f5e', Severe: '#f97316', Moderate: '#f59e0b', Minor: '#6a9fc0' }
 
-function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget, onSelectReport, nwsAlerts, nwsDismissed, onNwsDismiss }) {
+function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget, onSelectReport, nwsAlerts, nwsDismissed, onNwsDismiss, sidebarCollapsed }) {
 
-  const [mapStyle, setMapStyle] = useState('street') // 'street' | 'satellite'
+  const [mapStyle, setMapStyle] = useState('satellite') // 'street' | 'satellite'
 
   // Layer visibility
   const [showHeatmap,    setShowHeatmap]    = useState(false)
@@ -531,6 +541,7 @@ function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget
 
         <MapClickHandler onMapClick={onMapClick} />
         <FlyController flyTarget={flyTarget} />
+        <MapResizer trigger={sidebarCollapsed} />
 
         {/* Heatmap */}
         {clearanceLevel >= 4 && showHeatmap && <HeatmapLayer reports={reports} />}

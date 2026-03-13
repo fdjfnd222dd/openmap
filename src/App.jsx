@@ -364,6 +364,7 @@ function App() {
           nwsAlerts={nwsAlerts}
           nwsDismissed={nwsDismissed}
           onNwsDismiss={() => setNwsDismissed(true)}
+          sidebarCollapsed={sidebarCollapsed}
         />
       </div>
 
