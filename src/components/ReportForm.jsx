@@ -67,12 +67,14 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
   } = useForm()
 
   useEffect(() => {
-    if (previewCoords) {
-      setValue('latitude',  previewCoords.lat, { shouldValidate: true, shouldDirty: true })
-      setValue('longitude', previewCoords.lng, { shouldValidate: true, shouldDirty: true })
-      setW3wDisplay(null)
+    if (!previewCoords) return
+    setValue('latitude',  previewCoords.lat, { shouldValidate: true, shouldDirty: true })
+    setValue('longitude', previewCoords.lng, { shouldValidate: true, shouldDirty: true })
+    setW3wDisplay(null)
+    const t = setTimeout(() => {
       coordsToW3W(previewCoords.lat, previewCoords.lng).then(words => setW3wDisplay(words))
-    }
+    }, 700)
+    return () => clearTimeout(t)
   }, [previewCoords, setValue])
 
   async function handleW3wLookup(e) {

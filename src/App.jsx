@@ -74,11 +74,9 @@ function App() {
     }
     return true
   })
-  const leveledReports = IS_PUBLIC_VIEW
-    ? filteredReports.filter(r => r.status === 'verified')
-    : clearanceLevel >= 2
-      ? filteredReports
-      : filteredReports.filter(r => r.status === 'verified')
+  const leveledReports = clearanceLevel >= 2
+    ? filteredReports
+    : filteredReports.filter(r => r.status === 'verified')
 
   // ── Sync clearance accent ──────────────────────────────────────────────────
   useEffect(() => {

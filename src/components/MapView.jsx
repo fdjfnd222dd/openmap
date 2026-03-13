@@ -5,6 +5,7 @@ const HI_BOUNDS = { minLat: 18.5, maxLat: 22.5, minLng: -161.0, maxLng: -154.5 }
 
 import { useState, useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, useMapEvents, useMap } from 'react-leaflet'
+import { escHtml } from '../utils/escape'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -71,16 +72,6 @@ function createSeismicIcon(mag) {
       </span>
     </div>`
   return L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: [size/2, size/2], popupAnchor: [0, -(size/2 + 6)] })
-}
-
-// ── HTML entity escaper — used for any DB-sourced string in divIcon HTML ──────
-function escHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
 }
 
 // ── CAT team (Blue Force) icon ─────────────────────────────────────────────────

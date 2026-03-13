@@ -56,7 +56,8 @@ function ChatSidebar({ session, clearanceLevel, isOpen, onClose, initialChannelI
   useEffect(() => {
     if (!activeChannelId) return
     setLoadingMsgs(true)
-    let sub
+    let cancelled = false
+    let sub = null
 
     async function init() {
       const { data } = await supabase
@@ -65,6 +66,7 @@ function ChatSidebar({ session, clearanceLevel, isOpen, onClose, initialChannelI
         .eq('channel_id', activeChannelId)
         .order('created_at', { ascending: true })
         .limit(100)
+      if (cancelled) return
       setMessages(data || [])
       setLoadingMsgs(false)
 
@@ -82,7 +84,7 @@ function ChatSidebar({ session, clearanceLevel, isOpen, onClose, initialChannelI
     }
 
     init()
-    return () => { if (sub) supabase.removeChannel(sub) }
+    return () => { cancelled = true; if (sub) supabase.removeChannel(sub) }
   }, [activeChannelId])
 
   // Scroll to bottom on new messages

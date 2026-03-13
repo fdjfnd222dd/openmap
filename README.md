@@ -2,78 +2,64 @@
 
 **321st Civil Affairs Battalion — Common Operating Picture Platform**
 
-A real-time civil affairs operations platform built for CAT team coordination, incident reporting, and command visibility. Designed as a proof-of-concept demonstration for CA battalion leadership.
-
----
-
-## Overview
-
-Project HILO gives Civil Affairs teams a unified browser-based COP — combining live incident reporting, blue force tracking, inter-team communications, Key Leader Engagement logging, SITREP filing, personnel status reporting, and command analytics in a single interface. No install required. Works on any modern browser.
+A real-time civil affairs operations platform for CAT team coordination, incident reporting, and command visibility. Browser-based, no install required.
 
 ---
 
 ## Features
 
-### Live Common Operating Picture
-- Interactive **Leaflet map** (OpenStreetMap + Esri Satellite) with color-coded incident pins by type
-- **USGS live seismic feed** — real Hawaii earthquake events auto-plotted, refreshed every 5 minutes, no API key required
-- **NWS weather alert** — active watches and warnings for Hawaii Island (HIZ023) shown as a compact map overlay, auto-refreshed every 10 minutes
-- **CAT team Blue Force Tracking** — dot + label BFT markers showing team positions and status (ACTIVE / RTB / HOLD / COMMS OUT) with Supabase Realtime updates
-- **CA simulation layer** — hardcoded CMOC, FOB, and 4x JBCP positions for Big Island
-- **AO sector boundaries** — color-coded polygon overlays per CAT team area of operations
-- **Click-to-pin** — click anywhere on the map to pre-fill coordinates in the report form
-- **Live incident feed** — new reports appear in real time via Supabase Realtime
-- **Marker clustering** with configurable radius
-- **Density heatmap** overlay (Level 4+)
-- **Weather precipitation overlay** via OpenWeatherMap tile layer (Level 4+)
-- **Street / Satellite tile toggle** inside the LAYERS panel
-- **Incident type legend** — persistent bottom-left map overlay (FLOOD / FIRE / QUAKE / OTHER)
+### Live Map
+- Leaflet map — Street (OpenStreetMap) or Satellite (Esri) default
+- Color-coded incident pins by type with status rings (verified/under review/false)
+- Click any map pin to open incident details
+- **Click-to-pin** — click the map to auto-fill coordinates in the report form
+- **What3Words** — every pinned location shows a `///word.word.word` address; type one to locate a spot
+- **USGS live seismic** — Hawaii earthquakes auto-plotted, refreshed every 5 min
+- **NWS weather alerts** — active watches/warnings for Hawaii Island (HIZ023)
+- **CAT Team Blue Force Tracking** — live dot markers per team with ACTIVE/RTB/HOLD/COMMS OUT status
+- **AO sector boundaries** — polygon overlays per CAT team area
+- **CA simulation layer** — CMOC, FOB, and 4× JBCP positions for Big Island
+- **Density heatmap** + **Weather overlay** (Responder role+)
+- Marker clustering, fullscreen mode
 
-### Clearance Level System
-Five access tiers, each unlocking additional capabilities. Controlled via a badge in the top-right corner.
+### Incident Reporting
+- Submit reports with title, type, description, and location (map click or W3W)
+- Type-specific structured detail fields (flood depth, fire size, earthquake damage, etc.)
+- Realtime feed — new reports appear live for all users
+- Export current filtered view as **GeoJSON**, **KML**, or **CSV**
 
-| Level | Name | Unlocks |
-|-------|------|---------|
-| 1 | PUBLIC | View verified incidents on map |
-| 2 | VOLUNTEER | Submit reports, COMMS, KLE, SITREP, PERSTAT |
-| 3 | COORDINATOR | Mark reports Under Review, file SITREPs |
-| 4 | RESPONDER | Heatmap, weather overlay |
-| 5 | COMMAND | Verify/false reports, FRAGORD broadcast, INTEL analytics |
+### Role System
+Five access tiers, freely selectable from the top-right panel:
 
-### Unified Command Sidebar
-Single left panel with tab rail. Tabs shown based on clearance level:
+| Role | Unlocks |
+|------|---------|
+| PUBLIC | View verified incidents |
+| VOLUNTEER | Submit reports, chat, logs |
+| COORDINATOR | Mark reports Under Review, file SITREPs |
+| RESPONDER | Heatmap, weather overlay |
+| ADMIN | Verify/false reports, FRAGORD broadcast, analytics |
 
-| Tab | Level | Description |
-|-----|-------|-------------|
-| ● FEED | 1+ | Live incident feed with type/status filter bar |
-| + REPORT | 2+ | Submit new incident report with map click-to-pin |
-| ◈ COMMS | 2+ | Regional and incident-specific real-time chat |
-| ≡ LOGS | 2+ | Three sub-tabs: SITREP / KLE / PERSTAT |
-| ∑ INTEL | 5 | Command analytics dashboard (charts + stats) |
-| ◯ PROFILE | 1+ | Trust score, submission stats, top-10 leaderboard |
+### Communications
+- Channel-based real-time chat (Supabase Realtime)
+- Regional channels always available
+- Per-incident channels created from the report detail view
+- Messages tagged with sender's role
 
-### LOGS Tab (SITREP / KLE / PERSTAT)
+### LOGS Tab
+- **SITREP** — structured situation reports linked to incidents, Draft/Active/Resolved lifecycle, NATO text export
+- **KLE** — Key Leader Engagement log with outcome, reliability rating, and clipboard export
+- **PERSTAT** — team headcount with GREEN/AMBER/RED status, live roll-up
 
-**SITREP Builder** — Structured situation report creation linked to specific incidents. Supports Draft / Active / Resolved lifecycle. One-click export formats to NATO text format and copies to clipboard.
+### FRAGORD
+Admin-only broadcast of Fragmentary Orders at ROUTINE/PRIORITY/IMMEDIATE/FLASH priority. Appears as a full-width banner to all users.
 
-**Key Leader Engagement (KLE) Log** — Log every civil leader engagement with organization, location, date, outcome (Positive / Neutral / Negative), reliability rating (1–5 stars), and follow-up actions. Export to formatted KLE report.
+### Trust & Verification
+- Unverified → Under Review → Verified / False
+- Trust score adjustments on verdict (+10 verified, −5 false)
+- Leaderboard in profile tab
 
-**PERSTAT (Personnel Status)** — Teams submit real-time headcount with GREEN / AMBER / RED status. Command sees a live roll-up of all teams with total PAX count and missing-report indicators. Updates via Supabase Realtime.
-
-### FRAGORD Broadcast
-Level 5 commanders issue Fragmentary Orders to all connected users instantly. Priority levels: ROUTINE / PRIORITY / IMMEDIATE / FLASH. Appears as a full-width alert banner. Users acknowledge with a single button. Acknowledgment persists in localStorage.
-
-### Incident Verification Workflow
-Unverified → Under Review → Verified → False. Level 3 marks Under Review. Level 5 delivers final verdict. Trust score adjustments applied to report submitters on verdict (+10 verified, −5 false).
-
-### Trust & Credibility System
-Every authenticated user has a trust score. Four badge tiers: neutral → green → blue → gold. Displayed on report cards and in the profile/leaderboard tab.
-
-### Real-time Communications
-Channel-based messaging. Regional channels (NORTH / SOUTH / EAST / WEST / CMOC) always available. Per-incident channels auto-created from the report detail view. Messages tagged with sender's clearance level badge.
-
-### Command Analytics (Level 5)
-Inline analytics panel: total reports, verified percentage, under-review count, false count, reports by type (bar chart), 7-day trend (line chart), status breakdown (pie chart).
+### Public Read-Only View
+Append `?view=public` to the URL for a shareable, login-free view showing only verified incidents.
 
 ---
 
@@ -82,19 +68,17 @@ Inline analytics panel: total reports, verified percentage, under-review count, 
 | Layer | Technology |
 |-------|------------|
 | Framework | React 18 + Vite 5 |
-| Map | Leaflet.js via react-leaflet v4 |
-| Clustering | react-leaflet-cluster |
+| Map | Leaflet.js / react-leaflet v4 |
 | Forms | React Hook Form |
 | Charts | Recharts |
 | Backend | Supabase (Postgres + Auth + Realtime) |
-| Fonts | Rajdhani, Inter, JetBrains Mono |
 | Styling | Plain CSS with CSS custom properties |
-| Tile layers | OpenStreetMap (street), Esri World Imagery (satellite) |
-| External APIs | USGS Earthquake GeoJSON (free), NWS Alerts API (free), OpenWeatherMap tiles |
+| Tile layers | OpenStreetMap, Esri World Imagery |
+| External APIs | USGS Earthquake, NWS Alerts, OpenWeatherMap, What3Words |
 
 ---
 
-## Getting Started
+## Setup
 
 ### 1. Clone and install
 
@@ -104,22 +88,31 @@ cd hilo
 npm install
 ```
 
-### 2. Configure Supabase
+### 2. Environment variables
 
-Add your Supabase project URL and anon key to `src/supabaseClient.js`.
+Create a `.env` file at the project root:
 
-### 3. Run database migrations
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_OWM_API_KEY=your_openweathermap_key
+VITE_W3W_API_KEY=your_what3words_key
+```
 
-Run the following in the Supabase SQL Editor:
+- **Supabase**: [supabase.com](https://supabase.com) → Settings → API
+- **OpenWeatherMap**: [openweathermap.org/api](https://openweathermap.org/api) (free tier)
+- **What3Words**: [developer.what3words.com](https://developer.what3words.com) (free tier)
+
+### 3. Database setup
+
+Run the following in the **Supabase SQL Editor**:
 
 ```sql
 -- profiles
 CREATE TABLE profiles (
   id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email text,
-  trust_score int DEFAULT 0,
-  reports_submitted int DEFAULT 0,
-  reports_verified int DEFAULT 0,
+  email text, trust_score int DEFAULT 0,
+  reports_submitted int DEFAULT 0, reports_verified int DEFAULT 0,
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -132,11 +125,8 @@ CREATE TABLE reports (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at timestamptz DEFAULT now(),
   user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  title text NOT NULL,
-  description text,
-  type text DEFAULT 'other',
-  latitude float, longitude float,
-  status text
+  title text NOT NULL, description text,
+  type text DEFAULT 'other', latitude float, longitude float, status text
 );
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "reports_select" ON reports FOR SELECT USING (true);
@@ -160,9 +150,8 @@ CREATE POLICY "comments_insert" ON comments FOR INSERT WITH CHECK (auth.uid() = 
 CREATE TABLE channels (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at timestamptz DEFAULT now(),
-  name text NOT NULL,
-  type text DEFAULT 'regional',
-  incident_id bigint REFERENCES reports(id) ON DELETE SET NULL
+  name text NOT NULL, type text DEFAULT 'region',
+  description text, incident_id bigint REFERENCES reports(id) ON DELETE SET NULL
 );
 ALTER TABLE channels ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "channels_select" ON channels FOR SELECT USING (true);
@@ -173,9 +162,7 @@ CREATE TABLE messages (
   created_at timestamptz DEFAULT now(),
   channel_id bigint REFERENCES channels(id) ON DELETE CASCADE,
   user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  user_email text,
-  content text NOT NULL,
-  clearance_level int DEFAULT 1
+  user_email text, content text NOT NULL, clearance_level int DEFAULT 1
 );
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "messages_select" ON messages FOR SELECT USING (true);
@@ -186,9 +173,7 @@ ALTER TABLE messages REPLICA IDENTITY FULL;
 CREATE TABLE sitreps (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at timestamptz DEFAULT now(),
-  title text NOT NULL,
-  content text,
-  status text DEFAULT 'draft',
+  title text NOT NULL, content text, status text DEFAULT 'draft',
   report_id bigint REFERENCES reports(id) ON DELETE SET NULL,
   user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
@@ -201,105 +186,115 @@ CREATE POLICY "sitreps_update" ON sitreps FOR UPDATE USING (auth.role() = 'authe
 CREATE TABLE kle_log (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at timestamptz DEFAULT now(),
-  leader_name text NOT NULL,
-  organization text, location text,
-  date_of_engagement timestamptz DEFAULT now(),
-  summary text, outcome text DEFAULT 'neutral',
+  leader_name text NOT NULL, organization text, location text,
+  date_of_engagement date, summary text, outcome text DEFAULT 'neutral',
   follow_up text, reliability int DEFAULT 3,
   user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
 ALTER TABLE kle_log ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "kle_select" ON kle_log FOR SELECT USING (true);
 CREATE POLICY "kle_insert" ON kle_log FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "kle_update" ON kle_log FOR UPDATE USING (auth.role() = 'authenticated');
-
--- team_status (BFT)
-CREATE TABLE team_status (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  updated_at timestamptz DEFAULT now(),
-  team_name text NOT NULL,
-  status text DEFAULT 'ACTIVE',
-  grid_lat float, grid_lng float,
-  notes text,
-  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL
-);
-ALTER TABLE team_status ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "team_select" ON team_status FOR SELECT USING (true);
-CREATE POLICY "team_insert" ON team_status FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "team_update" ON team_status FOR UPDATE USING (auth.role() = 'authenticated');
-
--- fragrods
-CREATE TABLE fragrods (
-  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  created_at timestamptz DEFAULT now(),
-  title text NOT NULL, content text NOT NULL,
-  priority text DEFAULT 'ROUTINE',
-  issued_by_email text, active boolean DEFAULT true,
-  issued_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
-);
-ALTER TABLE fragrods ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "fragord_select" ON fragrods FOR SELECT USING (true);
-CREATE POLICY "fragord_insert" ON fragrods FOR INSERT WITH CHECK (auth.uid() = issued_by);
-CREATE POLICY "fragord_update" ON fragrods FOR UPDATE USING (auth.role() = 'authenticated');
-ALTER TABLE fragrods REPLICA IDENTITY FULL;
 
 -- perstat
 CREATE TABLE perstat (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at timestamptz DEFAULT now(),
-  team_name text NOT NULL,
-  pax_present int DEFAULT 0,
-  status text DEFAULT 'GREEN',
-  notes text,
-  submitted_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+  team_name text NOT NULL, pax_present int, status text DEFAULT 'GREEN',
+  notes text, submitted_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
 ALTER TABLE perstat ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "perstat_select" ON perstat FOR SELECT USING (true);
 CREATE POLICY "perstat_insert" ON perstat FOR INSERT WITH CHECK (auth.uid() = submitted_by);
 ALTER TABLE perstat REPLICA IDENTITY FULL;
 
+-- fragrods
+CREATE TABLE fragrods (
+  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  created_at timestamptz DEFAULT now(),
+  title text NOT NULL, content text NOT NULL,
+  priority text DEFAULT 'ROUTINE', active boolean DEFAULT true,
+  issued_by uuid REFERENCES auth.users(id) ON DELETE SET NULL, issued_by_email text
+);
+ALTER TABLE fragrods ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "fragrods_select" ON fragrods FOR SELECT USING (true);
+CREATE POLICY "fragrods_insert" ON fragrods FOR INSERT WITH CHECK (auth.uid() = issued_by);
+CREATE POLICY "fragrods_update" ON fragrods FOR UPDATE USING (auth.role() = 'authenticated');
+ALTER TABLE fragrods REPLICA IDENTITY FULL;
+
 -- verification_history
 CREATE TABLE verification_history (
   id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   created_at timestamptz DEFAULT now(),
   report_id bigint REFERENCES reports(id) ON DELETE CASCADE,
-  user_id uuid, user_email text,
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   old_status text, new_status text
 );
 ALTER TABLE verification_history ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "vh_select" ON verification_history FOR SELECT USING (true);
 CREATE POLICY "vh_insert" ON verification_history FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- relationships + sitreps for graph view
+CREATE TABLE relationships (
+  id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  created_at timestamptz DEFAULT now(),
+  source_type text NOT NULL, source_id text NOT NULL,
+  target_type text NOT NULL, target_id text NOT NULL,
+  label text NOT NULL, created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+);
+ALTER TABLE relationships ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "relationships_select" ON relationships FOR SELECT USING (true);
+CREATE POLICY "relationships_insert" ON relationships FOR INSERT WITH CHECK (auth.uid() = created_by);
+
+-- RPC functions for trust score
+CREATE OR REPLACE FUNCTION increment_trust_score(uid uuid, delta int)
+RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
+  UPDATE profiles SET trust_score = COALESCE(trust_score, 0) + delta WHERE id = uid;
+$$;
+
+CREATE OR REPLACE FUNCTION increment_reports_submitted(uid uuid)
+RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
+  UPDATE profiles SET reports_submitted = COALESCE(reports_submitted, 0) + 1 WHERE id = uid;
+$$;
+
+CREATE OR REPLACE FUNCTION increment_reports_verified(uid uuid)
+RETURNS void LANGUAGE sql SECURITY DEFINER AS $$
+  UPDATE profiles SET reports_verified = COALESCE(reports_verified, 0) + 1 WHERE id = uid;
+$$;
 ```
 
-### 4. Seed demo data
+Enable **Realtime** on these tables in Supabase → Database → Replication:
+`reports`, `messages`, `fragrods`, `perstat`, `channels`
+
+Seed a default regional channel:
+```sql
+INSERT INTO channels (name, type, description)
+VALUES ('hawaii-island', 'region', 'Hawaii Island regional ops');
+```
+
+### 4. Seed demo data (optional)
 
 ```sql
--- CAT team positions (Big Island, verified on-land coordinates)
-DELETE FROM team_status;
-INSERT INTO team_status (team_name, status, grid_lat, grid_lng, notes, updated_at) VALUES
-  ('CAT-A HILO',   'ACTIVE', 19.7200, -155.0860, 'Co-located CMOC at County EOC.',         now() - interval '12 minutes'),
-  ('CAT-B PUNA',   'ACTIVE', 19.5180, -154.9550, 'Forward deployed lower Puna.',            now() - interval '38 minutes'),
-  ('CAT-C KONA',   'RTB',    19.6390, -155.9960, 'Completing Kona shelter assessment.',     now() - interval '22 minutes'),
-  ('CAT-D KAU',    'HOLD',   19.0720, -155.5850, 'Holding JBCP-4. Route clearance pending.',now() - interval '1 hour'),
-  ('CAT-E KOHALA', 'ACTIVE', 20.0750, -155.4750, 'Hamakua coast assessment.',               now() - interval '9 minutes');
-
--- PERSTAT seed
-DELETE FROM perstat;
-INSERT INTO perstat (team_name, pax_present, status, notes, created_at) VALUES
-  ('CAT-A HILO',   4, 'GREEN', 'All PAX accounted. LNO at EOC.',      now() - interval '14 minutes'),
-  ('CAT-B PUNA',   3, 'AMBER', '1 PAX detached to Keaau shelter.',    now() - interval '41 minutes'),
-  ('CAT-C KONA',   4, 'GREEN', 'RTB FOB HILO est. 1730L.',            now() - interval '25 minutes'),
-  ('CAT-D KAU',    2, 'AMBER', 'Reduced strength, route delay.',       now() - interval '65 minutes'),
-  ('CAT-E KOHALA', 4, 'GREEN', 'Kohala stable. Community mtg 1500L.', now() - interval '11 minutes');
+-- CAT team positions
+INSERT INTO team_status (team_name, status, grid_lat, grid_lng, notes) VALUES
+  ('CAT-A HILO',   'ACTIVE', 19.7200, -155.0860, 'Co-located CMOC at County EOC.'),
+  ('CAT-B PUNA',   'ACTIVE', 19.5180, -154.9550, 'Forward deployed lower Puna.'),
+  ('CAT-C KONA',   'RTB',    19.6390, -155.9960, 'Completing Kona shelter assessment.'),
+  ('CAT-D KAU',    'HOLD',   19.0720, -155.5850, 'Holding JBCP-4. Route clearance pending.'),
+  ('CAT-E KOHALA', 'ACTIVE', 20.0750, -155.4750, 'Hamakua coast assessment.');
 ```
 
-### 5. Start the dev server
+### 5. Run locally
 
 ```bash
 npm run dev
+# Open http://localhost:5173
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+### 6. Deploy
+
+Deployed on **Vercel** (auto-deploys on push). Set the four environment variables in Vercel → Project Settings → Environment Variables.
+
+To invite users: Supabase → Authentication → Users → Invite user. Public sign-up can remain disabled.
 
 ---
 
@@ -308,55 +303,46 @@ Open [http://localhost:5173](http://localhost:5173).
 ```
 src/
 ├── components/
-│   ├── AnalyticsDashboard.jsx  # Command analytics (Level 5, inline)
-│   ├── AuthPanel.jsx           # Login / sign-up
-│   ├── ChatSidebar.jsx         # Real-time comms (inline mode)
-│   ├── ClearancePanel.jsx      # Clearance badge + code entry
-│   ├── FilterBar.jsx           # Type and status filter toggles
-│   ├── FragordPanel.jsx        # FRAGORD broadcast button + banner
-│   ├── KLEPanel.jsx            # Key Leader Engagement log
-│   ├── MapView.jsx             # Leaflet map, USGS feed, BFT, CA sim, layers
-│   ├── PERSTATPanel.jsx        # Personnel status reporting
-│   ├── ReportCard.jsx          # Incident card with verdict actions
-│   ├── ReportDetail.jsx        # Expanded detail + comments + verification history
-│   ├── ReportForm.jsx          # Submit new incident form
-│   ├── ReportList.jsx          # Scrollable incident feed
-│   ├── Sidebar.jsx             # Left panel — all tab navigation
-│   └── SitrepPanel.jsx         # SITREP builder and tracker
+│   ├── AnalyticsDashboard.jsx   # Admin analytics (charts)
+│   ├── AuthPanel.jsx            # Login / sign-up
+│   ├── ChatSidebar.jsx          # Real-time comms panel
+│   ├── ClearancePanel.jsx       # Role selector (top-right badge)
+│   ├── FilterBar.jsx            # Type + status filter toggles
+│   ├── FragordPanel.jsx         # FRAGORD broadcast + banner
+│   ├── GraphView.jsx            # Relations graph (ReactFlow)
+│   ├── KLEPanel.jsx             # Key Leader Engagement log
+│   ├── MapView.jsx              # Leaflet map + all overlay layers
+│   ├── PERSTATPanel.jsx         # Personnel status reporting
+│   ├── ReportCard.jsx           # Incident card with verdict actions
+│   ├── ReportDetail.jsx         # Expanded detail + comments
+│   ├── ReportForm.jsx           # Submit incident form
+│   ├── ReportList.jsx           # Scrollable incident feed
+│   ├── Sidebar.jsx              # Left panel — tab navigation
+│   └── SitrepPanel.jsx          # SITREP builder
 ├── utils/
-│   └── trust.js                # Trust score → CSS class helper
-├── App.jsx                     # Root component, global state
-├── index.css                   # All styles (CSS variables, tactical dark theme)
-├── main.jsx                    # React entry point
-└── supabaseClient.js           # Supabase client
+│   ├── escape.js                # HTML/XML escape helper
+│   ├── exportReports.js         # GeoJSON / KML / CSV export
+│   ├── trust.js                 # Trust score → CSS class
+│   └── w3w.js                   # What3Words API helpers
+├── App.jsx                      # Root component + global state
+├── index.css                    # All styles (CSS variables, dark theme)
+├── main.jsx                     # React entry point
+└── supabaseClient.js            # Supabase client init
 ```
 
 ---
 
-## Clearance Codes
+## Demo Flow
 
-Hardcoded for demo/personal use. Do not use in production.
-
-| Level | Code |
-|-------|------|
-| 2 — VOLUNTEER | `volunteer2` |
-| 3 — COORDINATOR | `coordinator3` |
-| 4 — RESPONDER | `responder4` |
-| 5 — COMMAND | `command5` |
-
----
-
-## Demo Flow (5-minute brief)
-
-1. Open at Level 1 — map shows live incidents + bottom-left legend + NWS alert if active
-2. Unlock to Level 5 (`command5`) — show clearance tier system
-3. Open LAYERS panel — toggle AO Boundaries, CA Positions, Team BFT, Seismic
-4. Have a second device submit a report — appears on map in real time
-5. Click an incident → verify it via the detail panel
-6. Issue a FRAGORD broadcast → all users see the alert banner instantly
-7. LOGS tab → SITREP sub-tab → show pre-filed report → export to clipboard
-8. LOGS tab → PERSTAT sub-tab → show live team headcount roll-up
-9. INTEL tab → command analytics dashboard
+1. Open at Public role — map shows verified incidents + NWS alert if active
+2. Switch to Admin role — see full incident feed including unverified
+3. Open LAYERS panel — toggle AO Boundaries, CA Positions, BFT, Seismic
+4. Second device submits a report — appears on map in real time
+5. Click an incident → verify via the detail panel → pin glows cyan
+6. Issue a FRAGORD broadcast → alert banner appears for all users
+7. LOGS → SITREP → file a report → export to clipboard
+8. LOGS → PERSTAT → live team headcount roll-up
+9. Click ↓ EXPORT → download GeoJSON to open in QGIS/ArcGIS
 
 ---
 
