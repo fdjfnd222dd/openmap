@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../supabaseClient'
+import { coordsToW3W, w3wToCoords } from '../utils/w3w'
 
 const INCIDENT_TYPES = [
   { value: 'flood',      label: 'Flood'      },
@@ -47,11 +48,15 @@ const TEMPLATES = {
 }
 
 function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfileRefresh }) {
-  const [submitting, setSubmitting]     = useState(false)
-  const [submitError, setSubmitError]   = useState(null)
+  const [submitting, setSubmitting]       = useState(false)
+  const [submitError, setSubmitError]     = useState(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
-  const [selectedType, setSelectedType] = useState('')
-  const [details, setDetails]           = useState({})
+  const [selectedType, setSelectedType]   = useState('')
+  const [details, setDetails]             = useState({})
+  const [w3wDisplay, setW3wDisplay]       = useState(null)
+  const [w3wInput, setW3wInput]           = useState('')
+  const [w3wLooking, setW3wLooking]       = useState(false)
+  const [w3wError, setW3wError]           = useState(null)
 
   const {
     register,
@@ -65,8 +70,27 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
     if (previewCoords) {
       setValue('latitude',  previewCoords.lat, { shouldValidate: true, shouldDirty: true })
       setValue('longitude', previewCoords.lng, { shouldValidate: true, shouldDirty: true })
+      setW3wDisplay(null)
+      coordsToW3W(previewCoords.lat, previewCoords.lng).then(words => setW3wDisplay(words))
     }
   }, [previewCoords, setValue])
+
+  async function handleW3wLookup(e) {
+    e.preventDefault()
+    if (!w3wInput.trim()) return
+    setW3wLooking(true)
+    setW3wError(null)
+    const coords = await w3wToCoords(w3wInput.trim())
+    setW3wLooking(false)
+    if (!coords) {
+      setW3wError('Address not found. Use format: ///word.word.word')
+      return
+    }
+    setValue('latitude',  coords.lat, { shouldValidate: true, shouldDirty: true })
+    setValue('longitude', coords.lng, { shouldValidate: true, shouldDirty: true })
+    setW3wDisplay(w3wInput.replace(/^\/\/\//, '').trim().toLowerCase())
+    setW3wInput('')
+  }
 
   function handleTypeChange(e) {
     setSelectedType(e.target.value)
@@ -213,6 +237,38 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
           </div>
         )}
 
+        {/* ── Location ── */}
+        <div className="field-group">
+          <label className="field-label">LOCATION</label>
+
+          {/* What3Words lookup */}
+          <form className="w3w-lookup-row" onSubmit={handleW3wLookup}>
+            <input
+              className="field-input w3w-input"
+              value={w3wInput}
+              onChange={e => { setW3wInput(e.target.value); setW3wError(null) }}
+              placeholder="///word.word.word"
+              autoComplete="off"
+            />
+            <button className="w3w-lookup-btn" type="submit" disabled={w3wLooking || !w3wInput.trim()}>
+              {w3wLooking ? '…' : 'LOCATE'}
+            </button>
+          </form>
+          {w3wError && <span className="field-error-msg">{w3wError}</span>}
+
+          {w3wDisplay && (
+            <a
+              className="w3w-display"
+              href={`https://what3words.com/${w3wDisplay}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open in What3Words"
+            >
+              <span className="w3w-slashes">///</span>{w3wDisplay}
+            </a>
+          )}
+        </div>
+
         {/* ── Coordinates ── */}
         <div className="field-row">
           <div className="field-group">
@@ -249,7 +305,7 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
 
         {!previewCoords && (
           <div className="form-map-tip">
-            💡 Click anywhere on the map to auto-fill coordinates
+            💡 Click the map to pin a location, or enter a ///what3words address above
           </div>
         )}
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { trustClass } from '../utils/trust'
+import { coordsToW3W } from '../utils/w3w'
 
 const INCIDENT_META = {
   flood:      { label: 'FLOOD',      mod: 'flood'      },
@@ -38,6 +39,14 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles, onUp
   const [submitting, setSubmitting]         = useState(false)
   const [history, setHistory]               = useState([])
   const [working, setWorking]               = useState(false)
+  const [w3wAddress, setW3wAddress]         = useState(null)
+
+  useEffect(() => {
+    const lat = parseFloat(report.latitude), lng = parseFloat(report.longitude)
+    if (!isNaN(lat) && !isNaN(lng)) {
+      coordsToW3W(lat, lng).then(words => setW3wAddress(words))
+    }
+  }, [report.id])
 
   const meta             = INCIDENT_META[report.type] || INCIDENT_META.other
   const submitterProfile = report.user_id ? profiles?.[report.user_id] : null
@@ -189,6 +198,17 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles, onUp
             {parseFloat(report.latitude).toFixed(4)},&nbsp;
             {parseFloat(report.longitude).toFixed(4)}
           </span>
+          {w3wAddress && (
+            <a
+              className="w3w-display w3w-display--inline"
+              href={`https://what3words.com/${w3wAddress}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open in What3Words"
+            >
+              <span className="w3w-slashes">///</span>{w3wAddress}
+            </a>
+          )}
         </div>
 
         {/* Level 3+: extended + verification actions */}
