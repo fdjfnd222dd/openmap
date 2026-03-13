@@ -79,12 +79,12 @@ function AuthPanel() {
       <div className="auth-header">
         <div className="auth-lock">⬡</div>
         <div className="auth-title">
-          {mode === 'login' ? 'SIGN IN TO REPORT' : 'CREATE ACCOUNT'}
+          {mode === 'login' ? 'SECURE ACCESS' : 'CREATE ACCOUNT'}
         </div>
         <div className="auth-subtitle">
           {mode === 'login'
-            ? 'Authenticated reporters only'
-            : 'Free — no credit card required'}
+            ? 'Authorized personnel only'
+            : 'Request access from your coordinator'}
         </div>
       </div>
 

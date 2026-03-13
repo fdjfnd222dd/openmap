@@ -104,7 +104,6 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles, onUp
     await supabase.from('verification_history').insert({
       report_id:  Number(report.id),
       user_id:    session.user.id,
-      user_email: session.user.email,
       old_status: oldStatus,
       new_status: newStatus,
     })
@@ -168,6 +167,21 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles, onUp
         <h2 className="detail-title">{report.title}</h2>
 
         {report.description && <p className="detail-desc">{report.description}</p>}
+
+        {/* ── Template details (if submitted with a template) ── */}
+        {report.details && Object.keys(report.details).length > 0 && (
+          <div className="detail-template">
+            <div className="detail-template-label">{(report.type || 'INCIDENT').toUpperCase()} DETAILS</div>
+            {Object.entries(report.details).map(([key, val]) => (
+              <div className="detail-template-row" key={key}>
+                <span className="detail-template-key">
+                  {key.replace(/_/g, ' ').toUpperCase()}
+                </span>
+                <span className="detail-template-val">{val}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="detail-coords">
           <span className="coords-icon">⊕</span>
@@ -241,7 +255,7 @@ function ReportDetail({ report, session, clearanceLevel, onClose, profiles, onUp
                 {history.map(h => (
                   <div key={h.id} className="verif-history-row">
                     <span className="verif-history-who">
-                      {h.user_email ? h.user_email.split('@')[0] : '?'}
+                      {shortId(h.user_id)}
                     </span>
                     <span className="verif-history-arrow">
                       {h.old_status || 'unverified'} → {h.new_status}

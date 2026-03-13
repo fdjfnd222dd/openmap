@@ -33,10 +33,8 @@ import { createClient } from '@supabase/supabase-js'
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
-//                       ↓ Replace with your Project URL
-const SUPABASE_URL      = 'https://twlsdigbkuwwczgnusbo.supabase.co'
-//                       ↓ Replace with your anon/public key
-const SUPABASE_ANON_KEY = 'sb_publishable_QyIV1mNvux86nGYu0Yj9eQ_i8cffisk'
+const SUPABASE_URL      = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 // createClient sets up the connection to Supabase.
 // We export `supabase` so every component can import and use it.

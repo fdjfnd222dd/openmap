@@ -1181,10 +1181,10 @@ body {
   background: var(--bg-card) !important;
   color: var(--text-secondary) !important;
   border-color: var(--border) !important;
-  width: 28px !important;
-  height: 28px !important;
-  line-height: 28px !important;
-  font-size: 16px !important;
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  font-size: 22px !important;
 }
 
 .leaflet-control-zoom a:hover {
@@ -3503,22 +3503,22 @@ body {
 /* ── MAP LAYER CONTROL ─────────────────────────────────────────── */
 .layer-control {
   position: absolute;
-  top: 12px;
+  bottom: 80px;
   right: 12px;
   z-index: 1100;
   pointer-events: auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   align-items: flex-end;
   gap: 4px;
 }
 .layer-control-toggle {
-  padding: 6px 12px;
+  padding: 9px 16px;
   background: rgba(2, 12, 26, 0.94);
   border: 1px solid var(--border);
   border-radius: 4px;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--text-secondary);
@@ -3536,7 +3536,7 @@ body {
   padding: 8px 0;
   min-width: 230px;
   backdrop-filter: blur(10px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
 }
 .layer-row {
   display: flex;
@@ -4857,6 +4857,79 @@ body {
 }
 .perstat-cancel-btn:hover { border-color: var(--text-muted); color: var(--text-secondary); }
 
+/* ── COPY BRIEF button ───────────────────────────────────────────────────── */
+.brief-copy-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.brief-copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── REPORT TEMPLATE section ─────────────────────────────────────────────── */
+.template-section {
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.template-section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+/* ── DETAIL template block (in ReportDetail) ─────────────────────────────── */
+.detail-template {
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  padding: 8px 12px;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.detail-template-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+.detail-template-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.detail-template-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-label);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.detail-template-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  text-align: right;
+}
+
 /* ── LOGS subtabs (SITREP | KLE) ─────────────────────────────────────────── */
 .logs-subtabs {
   display: flex;
@@ -4937,29 +5010,135 @@ body {
   z-index: 900;
   background: rgba(2, 12, 26, 0.88);
   border: 1px solid rgba(255,255,255,0.08);
-  padding: 6px 10px;
+  padding: 8px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   pointer-events: none;
   backdrop-filter: blur(6px);
 }
 .map-legend-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 .map-legend-dot {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 .map-legend-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: rgba(200, 224, 255, 0.6);
+  color: rgba(200, 224, 255, 0.75);
+}
+
+/* ── LOGIN SCREEN ─────────────────────────────────────────────────────────────── */
+
+.login-screen {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-app);
+  overflow: hidden;
+}
+
+/* subtle grid overlay */
+.login-screen-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 200, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 200, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* radial glow behind card */
+.login-screen::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(0, 200, 255, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.login-screen-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px 16px;
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.login-brand-mark {
+  font-size: 36px;
+  color: var(--accent);
+  line-height: 1;
+  filter: drop-shadow(0 0 12px var(--accent));
+}
+
+.login-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.login-brand-name {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.login-brand-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+.login-card {
+  width: 100%;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(0, 200, 255, 0.05),
+    0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.login-footer {
+  text-align: center;
+}
+
+.login-footer-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  opacity: 0.5;
 }
 

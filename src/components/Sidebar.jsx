@@ -27,7 +27,31 @@ function Sidebar({
   const [newIncidentNotif, setNewIncidentNotif] = useState(false)
   const [leaderboard, setLeaderboard]           = useState([])
   const [leaderboardLoading, setLeaderboardLoading] = useState(false)
-  const [logsSubTab, setLogsSubTab]             = useState('sitrep') // 'sitrep' | 'kle'
+  const [logsSubTab, setLogsSubTab]             = useState('sitrep')
+  const [briefCopied, setBriefCopied]           = useState(false)
+
+  function copyBrief() {
+    const dtg = new Date().toISOString().replace('T', ' ').slice(0, 16) + 'Z'
+    const lines = [
+      `INCIDENT BRIEF — ${dtg}`,
+      `321st CA BN · CAT OPS · Big Island`,
+      `─────────────────────────────────`,
+      '',
+      ...reports.map((r, i) => {
+        const status = r.status ? r.status.replace('_', ' ').toUpperCase() : 'UNVERIFIED'
+        const lat = parseFloat(r.latitude).toFixed(4)
+        const lng = parseFloat(r.longitude).toFixed(4)
+        return `[${i + 1}] ${(r.type || 'OTHER').toUpperCase()} · ${status}\n    ${r.title}\n    ${lat}°, ${lng}°`
+      }),
+      '',
+      `─────────────────────────────────`,
+      `TOTAL: ${reports.length} REPORTS`,
+    ]
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      setBriefCopied(true)
+      setTimeout(() => setBriefCopied(false), 2000)
+    })
+  }
 
   const prevLengthRef = useRef(null)
   const activeTabRef  = useRef('incidents')
@@ -102,6 +126,9 @@ function Sidebar({
               <span className="status-count">{totalCount}</span>
             )}
             <span className="status-count-label">REPORTS</span>
+            <button className="brief-copy-btn" onClick={copyBrief} title="Copy incident brief to clipboard">
+              {briefCopied ? '✓ COPIED' : '⎘ BRIEF'}
+            </button>
           </div>
         </div>
 

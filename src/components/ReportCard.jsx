@@ -59,24 +59,18 @@ function ReportCard({
       await supabase.from('verification_history').insert({
         report_id:  Number(report.id),
         user_id:    session.user.id,
-        user_email: session.user.email,
         old_status: oldStatus,
         new_status: newStatus,
       })
     }
 
-    // Trust score adjustment for verified / false
+    // Trust score adjustment — atomic DB-side increments to avoid race conditions
     if (report.user_id && (newStatus === 'verified' || newStatus === 'false')) {
-      const currentScore    = submitterProfile?.trust_score    || 0
-      const currentVerified = submitterProfile?.reports_verified || 0
       if (newStatus === 'verified') {
-        await supabase.from('profiles')
-          .update({ trust_score: currentScore + 10, reports_verified: currentVerified + 1 })
-          .eq('id', report.user_id)
+        await supabase.rpc('increment_trust_score',     { uid: report.user_id, delta: 10 })
+        await supabase.rpc('increment_reports_verified', { uid: report.user_id })
       } else {
-        await supabase.from('profiles')
-          .update({ trust_score: Math.max(0, currentScore - 5) })
-          .eq('id', report.user_id)
+        await supabase.rpc('increment_trust_score',     { uid: report.user_id, delta: -5 })
       }
       onProfileRefresh(report.user_id)
     }

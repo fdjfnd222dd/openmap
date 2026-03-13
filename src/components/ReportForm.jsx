@@ -2,17 +2,6 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { supabase } from '../supabaseClient'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ReportForm — lets a logged-in user (clearance level 2+) submit a report
-//
-// Props:
-//   session          — the Supabase auth session (for user.id)
-//   onNewReport      — callback(report) adds the new report to the list
-//   previewCoords    — {lat, lng} from a map click; auto-fills lat/lng fields
-//   userProfile      — the current user's profile row (for trust score display)
-//   onProfileRefresh — fn(userId) refreshes the profile cache after submit
-// ─────────────────────────────────────────────────────────────────────────────
-
 const INCIDENT_TYPES = [
   { value: 'flood',      label: 'Flood'      },
   { value: 'fire',       label: 'Fire'       },
@@ -20,26 +9,73 @@ const INCIDENT_TYPES = [
   { value: 'other',      label: 'Other'      },
 ]
 
+// ── Type-specific template field definitions ───────────────────────────────────
+const TEMPLATES = {
+  flood: [
+    { key: 'water_depth',    label: 'Water Depth',        type: 'select',
+      options: ['Unknown', 'Shallow (<1 ft)', 'Moderate (1–3 ft)', 'Severe (>3 ft)'] },
+    { key: 'road_closures',  label: 'Road Closures',      type: 'text',    placeholder: 'e.g. Kamehameha Ave, Hwy 11' },
+    { key: 'evacuation',     label: 'Evacuation Status',  type: 'select',
+      options: ['None', 'Advisory', 'Mandatory'] },
+    { key: 'shelter_needed', label: 'Shelter Needed',     type: 'select',
+      options: ['Unknown', 'No', 'Yes'] },
+  ],
+  fire: [
+    { key: 'fire_size',      label: 'Estimated Size',     type: 'select',
+      options: ['Unknown', 'Small (<1 acre)', 'Medium (1–10 acres)', 'Large (>10 acres)'] },
+    { key: 'structures',     label: 'Structures Threatened', type: 'text', placeholder: 'e.g. 12 residential' },
+    { key: 'evacuation',     label: 'Evacuation Orders',  type: 'select',
+      options: ['None', 'Advisory', 'Mandatory'] },
+    { key: 'active_spread',  label: 'Active Spread',      type: 'select',
+      options: ['Unknown', 'Contained', 'Spreading'] },
+  ],
+  earthquake: [
+    { key: 'damage_level',   label: 'Structural Damage',  type: 'select',
+      options: ['None observed', 'Minor', 'Moderate', 'Severe'] },
+    { key: 'injuries',       label: 'Injuries Reported',  type: 'select',
+      options: ['None', 'Possible', 'Confirmed'] },
+    { key: 'infra_affected', label: 'Infrastructure Affected', type: 'text', placeholder: 'e.g. Power out, Hwy 130 cracked' },
+  ],
+  other: [
+    { key: 'category',       label: 'Category',           type: 'select',
+      options: ['Humanitarian', 'Medical', 'Security', 'Logistics', 'Communications', 'Other'] },
+    { key: 'pop_affected',   label: 'Population Affected', type: 'text', placeholder: 'e.g. ~200 residents' },
+    { key: 'immediate_needs',label: 'Immediate Needs',    type: 'text', placeholder: 'e.g. Water, generators, medical' },
+    { key: 'authority_notified', label: 'Local Authority Notified', type: 'select',
+      options: ['Unknown', 'No', 'Yes'] },
+  ],
+}
+
 function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfileRefresh }) {
-  const [submitting, setSubmitting]       = useState(false)
-  const [submitError, setSubmitError]     = useState(null)
+  const [submitting, setSubmitting]     = useState(false)
+  const [submitError, setSubmitError]   = useState(null)
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [selectedType, setSelectedType] = useState('')
+  const [details, setDetails]           = useState({})
 
   const {
     register,
     handleSubmit,
     reset,
-    setValue,           // lets us programmatically set a field's value
+    setValue,
     formState: { errors },
   } = useForm()
 
-  // ── Auto-fill lat/lng when the user clicks the map ────────────────────────
   useEffect(() => {
     if (previewCoords) {
       setValue('latitude',  previewCoords.lat, { shouldValidate: true, shouldDirty: true })
       setValue('longitude', previewCoords.lng, { shouldValidate: true, shouldDirty: true })
     }
   }, [previewCoords, setValue])
+
+  function handleTypeChange(e) {
+    setSelectedType(e.target.value)
+    setDetails({})
+  }
+
+  function setDetail(key, value) {
+    setDetails(prev => ({ ...prev, [key]: value }))
+  }
 
   async function onSubmit(data) {
     setSubmitting(true)
@@ -55,6 +91,7 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
         latitude:    parseFloat(data.latitude),
         longitude:   parseFloat(data.longitude),
         user_id:     session.user.id,
+        details:     Object.keys(details).length > 0 ? details : null,
       }])
       .select()
       .single()
@@ -67,33 +104,24 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
       return
     }
 
-    // Increment the submitter's reports_submitted count in their profile
-    const newCount = (userProfile?.reports_submitted || 0) + 1
-    await supabase
-      .from('profiles')
-      .update({ reports_submitted: newCount })
-      .eq('id', session.user.id)
-
-    // Refresh the cached profile so the trust badge reflects the new count
+    await supabase.rpc('increment_reports_submitted', { uid: session.user.id })
     onProfileRefresh(session.user.id)
-
-    // Notify the parent — adds the report to the list and clears the preview pin
     onNewReport(inserted)
     setSubmitSuccess(true)
     reset()
-
+    setSelectedType('')
+    setDetails({})
     setTimeout(() => setSubmitSuccess(false), 3000)
   }
+
+  const templateFields = TEMPLATES[selectedType] || []
 
   return (
     <div className="report-form-wrapper">
 
-      {/* ── Section header with trust score badge ── */}
       <div className="form-section-header">
         <span className="form-section-icon">＋</span>
         <span className="form-section-label">SUBMIT INCIDENT REPORT</span>
-
-        {/* Trust score — shown when the profile has loaded */}
         {userProfile != null && (
           <div className="form-trust-badge" title="Your current trust score">
             <span className="form-trust-icon">◈</span>
@@ -104,39 +132,39 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
 
       <form onSubmit={handleSubmit(onSubmit)} className="report-form" noValidate>
 
-        {/* ── Title ───────────────────────────────────────────────────── */}
+        {/* ── Title ── */}
         <div className="field-group">
           <label className="field-label" htmlFor="title">TITLE</label>
           <input
             id="title"
             className={`field-input ${errors.title ? 'field-input--error' : ''}`}
             placeholder="e.g. Bridge flooding on Hwy 11"
-            {...register('title', { required: 'Title is required' })}
+            {...register('title', {
+              required: 'Title is required',
+              maxLength: { value: 120, message: 'Title must be 120 characters or fewer' },
+            })}
           />
-          {errors.title && (
-            <span className="field-error-msg">{errors.title.message}</span>
-          )}
+          {errors.title && <span className="field-error-msg">{errors.title.message}</span>}
         </div>
 
-        {/* ── Incident type ───────────────────────────────────────────── */}
+        {/* ── Incident type ── */}
         <div className="field-group">
           <label className="field-label" htmlFor="type">TYPE</label>
           <select
             id="type"
             className={`field-input field-select ${errors.type ? 'field-input--error' : ''}`}
             {...register('type', { required: 'Please select an incident type' })}
+            onChange={handleTypeChange}
           >
             <option value="">— Select incident type —</option>
-            {INCIDENT_TYPES.map((opt) => (
+            {INCIDENT_TYPES.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          {errors.type && (
-            <span className="field-error-msg">{errors.type.message}</span>
-          )}
+          {errors.type && <span className="field-error-msg">{errors.type.message}</span>}
         </div>
 
-        {/* ── Description ─────────────────────────────────────────────── */}
+        {/* ── Description ── */}
         <div className="field-group">
           <label className="field-label" htmlFor="description">
             DESCRIPTION <span className="field-optional">(optional)</span>
@@ -146,42 +174,67 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
             className="field-input field-textarea"
             placeholder="Severity, affected area, road closures…"
             rows={3}
-            {...register('description')}
+            {...register('description', {
+              maxLength: { value: 1000, message: 'Description must be 1000 characters or fewer' },
+            })}
           />
         </div>
 
-        {/* ── Coordinates ─────────────────────────────────────────────── */}
-        {/* These fields are auto-filled when the user clicks the map,
-            but can also be typed in manually. */}
+        {/* ── Template fields (type-specific) ── */}
+        {templateFields.length > 0 && (
+          <div className="template-section">
+            <div className="template-section-label">
+              {selectedType.toUpperCase()} DETAILS
+            </div>
+            {templateFields.map(field => (
+              <div className="field-group" key={field.key}>
+                <label className="field-label">{field.label}</label>
+                {field.type === 'select' ? (
+                  <select
+                    className="field-input field-select"
+                    value={details[field.key] || ''}
+                    onChange={e => setDetail(field.key, e.target.value)}
+                  >
+                    <option value="">— Select —</option>
+                    {field.options.map(opt => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className="field-input"
+                    placeholder={field.placeholder}
+                    value={details[field.key] || ''}
+                    onChange={e => setDetail(field.key, e.target.value)}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Coordinates ── */}
         <div className="field-row">
           <div className="field-group">
             <label className="field-label" htmlFor="latitude">
-              LATITUDE
-              {previewCoords && <span className="field-pin-hint"> ⊕</span>}
+              LATITUDE {previewCoords && <span className="field-pin-hint"> ⊕</span>}
             </label>
             <input
-              id="latitude"
-              type="number"
-              step="any"
+              id="latitude" type="number" step="any"
               className={`field-input ${errors.latitude ? 'field-input--error' : ''}`}
               placeholder="e.g. 19.7241"
               {...register('latitude', {
                 required: 'Required',
-                min: { value: -90,  message: '−90 to 90'  },
-                max: { value:  90,  message: '−90 to 90'  },
+                min: { value: -90,  message: '−90 to 90' },
+                max: { value:  90,  message: '−90 to 90' },
               })}
             />
-            {errors.latitude && (
-              <span className="field-error-msg">{errors.latitude.message}</span>
-            )}
+            {errors.latitude && <span className="field-error-msg">{errors.latitude.message}</span>}
           </div>
-
           <div className="field-group">
             <label className="field-label" htmlFor="longitude">LONGITUDE</label>
             <input
-              id="longitude"
-              type="number"
-              step="any"
+              id="longitude" type="number" step="any"
               className={`field-input ${errors.longitude ? 'field-input--error' : ''}`}
               placeholder="e.g. −155.09"
               {...register('longitude', {
@@ -190,13 +243,10 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
                 max: { value:  180, message: '−180 to 180' },
               })}
             />
-            {errors.longitude && (
-              <span className="field-error-msg">{errors.longitude.message}</span>
-            )}
+            {errors.longitude && <span className="field-error-msg">{errors.longitude.message}</span>}
           </div>
         </div>
 
-        {/* ── Tip when no preview coords are set ── */}
         {!previewCoords && (
           <div className="form-map-tip">
             💡 Click anywhere on the map to auto-fill coordinates
@@ -207,9 +257,7 @@ function ReportForm({ session, onNewReport, previewCoords, userProfile, onProfil
           <div className="form-feedback form-feedback--error">⚠ {submitError}</div>
         )}
         {submitSuccess && (
-          <div className="form-feedback form-feedback--success">
-            ✓ Report submitted. Pin placed on map.
-          </div>
+          <div className="form-feedback form-feedback--success">✓ Report submitted. Pin placed on map.</div>
         )}
 
         <button type="submit" className="btn-submit" disabled={submitting}>

@@ -1,4 +1,4 @@
-const OWM_API_KEY = '2ba332b995d0dbe7f95dba70962c359e'
+const OWM_API_KEY = import.meta.env.VITE_OWM_API_KEY
 
 // Hawaii bounding box for USGS filter
 const HI_BOUNDS = { minLat: 18.5, maxLat: 22.5, minLng: -161.0, maxLng: -154.5 }
@@ -56,6 +56,16 @@ function createSeismicIcon(mag) {
   return L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: [size/2, size/2], popupAnchor: [0, -(size/2 + 6)] })
 }
 
+// ── HTML entity escaper — used for any DB-sourced string in divIcon HTML ──────
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // ── CAT team (Blue Force) icon ─────────────────────────────────────────────────
 const BFT_STATUS = {
   ACTIVE:    { color: '#22d3ee', label: 'ACTIVE'    },
@@ -66,7 +76,7 @@ const BFT_STATUS = {
 
 function createBFTIcon(teamName, status) {
   const cfg    = BFT_STATUS[status] || BFT_STATUS.HOLD
-  const abbrev = teamName.replace('CAT-', '').split(' ')[0]
+  const abbrev = escHtml(teamName.replace('CAT-', '').split(' ')[0])
   const html   = `
     <div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
       <div style="width:12px;height:12px;border-radius:50%;background:${cfg.color};

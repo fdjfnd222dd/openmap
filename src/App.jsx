@@ -4,14 +4,20 @@ import Sidebar from './components/Sidebar'
 import MapView from './components/MapView'
 import ClearancePanel from './components/ClearancePanel'
 import { FragordBanner, FragordBroadcast } from './components/FragordPanel'
+import AuthPanel from './components/AuthPanel'
 
-function useUTCClock() {
+function UTCClock() {
   const [time, setTime] = useState(() => new Date().toISOString().slice(11, 19) + 'Z')
   useEffect(() => {
     const id = setInterval(() => setTime(new Date().toISOString().slice(11, 19) + 'Z'), 1000)
     return () => clearInterval(id)
   }, [])
-  return time
+  return (
+    <>
+      <span className="topnav-clock">{time}</span>
+      <span className="topnav-tz">UTC</span>
+    </>
+  )
 }
 
 // Severity order for NWS alert sorting
@@ -22,8 +28,6 @@ function App() {
   const [authLoading, setAuthLoading]       = useState(true)
   const [reports, setReports]               = useState([])
   const [reportsLoading, setReportsLoading] = useState(true)
-
-  const utcTime = useUTCClock()
 
   // ── Clearance ──────────────────────────────────────────────────────────────
   const [clearanceLevel, setClearanceLevel] = useState(() => {
@@ -128,6 +132,11 @@ function App() {
         const inc = payload.new
         setReports(prev => prev.some(r => r.id === inc.id) ? prev : [inc, ...prev])
         if (inc.user_id) refreshProfile(inc.user_id)
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reports' }, payload => {
+        const upd = payload.new
+        setReports(prev => prev.map(r => r.id === upd.id ? { ...r, ...upd } : r))
+        setSelectedReport(prev => prev?.id === upd.id ? { ...prev, ...upd } : prev)
       })
       .subscribe()
     return () => supabase.removeChannel(ch)
@@ -240,6 +249,27 @@ function App() {
     </div>
   )
 
+  if (!session) return (
+    <div className="login-screen">
+      <div className="login-screen-grid" />
+      <div className="login-screen-inner">
+        <div className="login-brand">
+          <span className="login-brand-mark">⬡</span>
+          <div className="login-brand-text">
+            <span className="login-brand-name">PROJECT HILO</span>
+            <span className="login-brand-sub">321st CA · Civil Affairs Platform</span>
+          </div>
+        </div>
+        <div className="login-card">
+          <AuthPanel />
+        </div>
+        <div className="login-footer">
+          <span className="login-footer-text">RESTRICTED SYSTEM · AUTHORIZED USERS ONLY</span>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="app-layout">
 
@@ -256,8 +286,7 @@ function App() {
           <span className="topnav-live-dot" />
           <span className="topnav-live-label">LIVE</span>
           <span className="topnav-divider" />
-          <span className="topnav-clock">{utcTime}</span>
-          <span className="topnav-tz">UTC</span>
+          <UTCClock />
         </div>
 
         <div className="topnav-actions">
