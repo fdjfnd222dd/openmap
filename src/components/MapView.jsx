@@ -25,16 +25,33 @@ const ICON_CONFIG = {
   other:      { emoji: '❓', bg: '#1e293b', border: '#94a3b8' },
 }
 
-function createEmojiIcon(type) {
-  const cfg  = ICON_CONFIG[type] || ICON_CONFIG.other
+const STATUS_RING = {
+  verified:     { color: '#22d3ee', glow: '0 0 0 3px #22d3ee55, 0 0 12px #22d3ee66', badge: '✓' },
+  under_review: { color: '#f59e0b', glow: '0 0 0 3px #f59e0b55, 0 0 10px #f59e0b44', badge: '⏳' },
+  false:        { color: '#ef444488', glow: 'none', badge: '✗' },
+}
+
+function createEmojiIcon(type, status) {
+  const cfg    = ICON_CONFIG[type] || ICON_CONFIG.other
+  const ring   = STATUS_RING[status]
+  const opacity = status === 'false' ? '0.45' : '1'
+  const shadow  = ring
+    ? `${ring.glow}, 0 2px 8px rgba(0,0,0,0.7)`
+    : '0 2px 8px rgba(0,0,0,0.7),0 0 0 1.5px rgba(255,255,255,0.2)'
+  const border  = ring ? `2px solid ${ring.color}` : `2px solid ${cfg.border}`
+  const badge   = ring ? `<span style="position:absolute;top:-4px;right:-4px;
+    background:#0a1628;border:1px solid ${ring.color};border-radius:50%;
+    width:14px;height:14px;font-size:8px;display:flex;align-items:center;
+    justify-content:center;line-height:1;">${ring.badge}</span>` : ''
   const html = `
-    <div style="width:36px;height:36px;border-radius:50%;
-      background:${cfg.bg};border:2px solid ${cfg.border};
+    <div style="position:relative;width:36px;height:36px;border-radius:50%;
+      background:${cfg.bg};border:${border};opacity:${opacity};
       display:flex;align-items:center;justify-content:center;
-      box-shadow:0 2px 8px rgba(0,0,0,0.7),0 0 0 1.5px rgba(255,255,255,0.2);">
+      box-shadow:${shadow};">
       <span style="font-size:16px;line-height:1;display:block;user-select:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8));">
         ${cfg.emoji}
       </span>
+      ${badge}
     </div>`
   return L.divIcon({ html, className: '', iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -22] })
 }
@@ -648,7 +665,7 @@ function MapView({ reports, clearanceLevel, previewCoords, onMapClick, flyTarget
             const lat = parseFloat(report.latitude), lng = parseFloat(report.longitude)
             if (isNaN(lat) || isNaN(lng)) return null
             return (
-              <Marker key={report.id} position={[lat, lng]} icon={createEmojiIcon(report.type)}>
+              <Marker key={`${report.id}-${report.status}`} position={[lat, lng]} icon={createEmojiIcon(report.type, report.status)}>
                 <Popup>
                   <div className="map-popup">
                     <span className={`popup-badge popup-badge--${report.type || 'other'}`}>

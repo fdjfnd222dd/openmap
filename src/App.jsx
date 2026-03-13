@@ -23,6 +23,8 @@ function UTCClock() {
 // Severity order for NWS alert sorting
 const NWS_SEVERITY = { Extreme: 0, Severe: 1, Moderate: 2, Minor: 3, Unknown: 4 }
 
+const IS_PUBLIC_VIEW = new URLSearchParams(window.location.search).get('view') === 'public'
+
 function App() {
   const [session, setSession]               = useState(null)
   const [authLoading, setAuthLoading]       = useState(true)
@@ -72,9 +74,11 @@ function App() {
     }
     return true
   })
-  const leveledReports = clearanceLevel >= 2
-    ? filteredReports
-    : filteredReports.filter(r => r.status === 'verified')
+  const leveledReports = IS_PUBLIC_VIEW
+    ? filteredReports.filter(r => r.status === 'verified')
+    : clearanceLevel >= 2
+      ? filteredReports
+      : filteredReports.filter(r => r.status === 'verified')
 
   // ── Sync clearance accent ──────────────────────────────────────────────────
   useEffect(() => {
@@ -249,7 +253,7 @@ function App() {
     </div>
   )
 
-  if (!session) return (
+  if (!session && !IS_PUBLIC_VIEW) return (
     <div className="login-screen">
       <div className="login-screen-grid" />
       <div className="login-screen-inner">
@@ -290,8 +294,8 @@ function App() {
         </div>
 
         <div className="topnav-actions">
-          {/* FRAGORD broadcast — L5 only */}
-          {clearanceLevel >= 5 && session && (
+          {/* FRAGORD broadcast — L5 only, not in public view */}
+          {!IS_PUBLIC_VIEW && clearanceLevel >= 5 && session && (
             <FragordBroadcast session={session} />
           )}
 
@@ -318,8 +322,20 @@ function App() {
         </div>
       </nav>
 
+      {/* ── Public view banner ── */}
+      {IS_PUBLIC_VIEW && (
+        <div className="public-view-banner">
+          <span className="public-view-text">
+            ⬡ READ-ONLY · Showing verified incidents only
+          </span>
+          <a className="public-view-signin" href={window.location.origin}>
+            Sign in for full access →
+          </a>
+        </div>
+      )}
+
       {/* ── FRAGORD banner — full width below topnav ── */}
-      {showFragord && (
+      {!IS_PUBLIC_VIEW && showFragord && (
         <FragordBanner
           fragord={activeFragord}
           onAcknowledge={handleAcknowledgeFragord}

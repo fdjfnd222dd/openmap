@@ -4428,6 +4428,37 @@ body {
    FRAGORD BANNER (global alert shown to all users)
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ── Public view banner ──────────────────────────────────────────────────── */
+.public-view-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: rgba(34, 211, 238, 0.08);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.25);
+  flex-shrink: 0;
+}
+.public-view-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #22d3ee;
+}
+.public-view-signin {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 3px;
+  transition: all 0.15s;
+}
+.public-view-signin:hover { border-color: #22d3ee; color: #22d3ee; }
+
 .fragord-banner {
   display: flex;
   align-items: center;
