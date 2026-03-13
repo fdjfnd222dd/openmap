@@ -50,13 +50,16 @@ function SitrepPanel({ session, reports = [], clearanceLevel }) {
 
   async function loadSitreps() {
     setLoading(true)
-    const { data } = await supabase
-      .from('sitreps')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50)
-    setSitreps(data || [])
-    setLoading(false)
+    try {
+      const { data } = await supabase
+        .from('sitreps')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      setSitreps(data || [])
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSubmit(e) {

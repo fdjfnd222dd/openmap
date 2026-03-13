@@ -59,13 +59,16 @@ function KLEPanel({ session, clearanceLevel }) {
 
   async function loadKLEs() {
     setLoading(true)
-    const { data } = await supabase
-      .from('kle_log')
-      .select('*')
-      .order('date_of_engagement', { ascending: false })
-      .limit(100)
-    setKles(data || [])
-    setLoading(false)
+    try {
+      const { data } = await supabase
+        .from('kle_log')
+        .select('*')
+        .order('date_of_engagement', { ascending: false })
+        .limit(100)
+      setKles(data || [])
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSubmit(e) {

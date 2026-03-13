@@ -29,12 +29,13 @@ function AnalyticsDashboard({ isOpen, onClose, inline = false }) {
 
   async function loadStats() {
     setLoading(true)
+    try {
     const { data: reports } = await supabase
       .from('reports')
       .select('id, type, status, created_at')
       .order('created_at', { ascending: true })
 
-    if (!reports) { setLoading(false); return }
+    if (!reports) { return }
 
     const total       = reports.length
     const verified    = reports.filter(r => r.status === 'verified').length
@@ -73,7 +74,9 @@ function AnalyticsDashboard({ isOpen, onClose, inline = false }) {
     }
 
     setStats({ total, verified, underReview, falsed, unverified, byType, byStatus, days })
-    setLoading(false)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isOpen && !inline) return null
